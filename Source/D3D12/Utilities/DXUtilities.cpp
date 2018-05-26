@@ -24,10 +24,28 @@ namespace Maia::Renderer::D3D12
 			return hardwareAdapter;
 		}
 	}
-	Microsoft::WRL::ComPtr<ID3D12Device4> CreateDevice(IDXGIAdapter& adapter, D3D_FEATURE_LEVEL minimumFeatureLevel)
+	Microsoft::WRL::ComPtr<ID3D12Device4> CreateD3DDevice(IDXGIAdapter& adapter, D3D_FEATURE_LEVEL minimumFeatureLevel)
 	{
-		Microsoft::WRL::ComPtr<ID3D12Device4> device;
-		D3D12::ThrowIfFailed(D3D12CreateDevice(&adapter, minimumFeatureLevel, IID_PPV_ARGS(&device)));
-		return device;
+		Microsoft::WRL::ComPtr<ID3D12Device4> d3dDevice;
+		D3D12::ThrowIfFailed(D3D12CreateDevice(&adapter, minimumFeatureLevel, IID_PPV_ARGS(&d3dDevice)));
+		return d3dDevice;
+	}
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CreateCommandAllocator(ID3D12Device& d3dDevice, D3D12_COMMAND_LIST_TYPE type)
+	{
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAllocator;
+		D3D12::ThrowIfFailed(d3dDevice.CreateCommandAllocator(type, IID_PPV_ARGS(&commandAllocator)));
+		return commandAllocator;
+	}
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CreateOpenedGraphicsCommandList(ID3D12Device& d3dDevice, UINT nodeMask, D3D12_COMMAND_LIST_TYPE type, ID3D12CommandAllocator& commandAllocator, ID3D12PipelineState* initialState)
+	{
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList;
+		D3D12::ThrowIfFailed(d3dDevice.CreateCommandList(nodeMask, type, &commandAllocator, initialState, IID_PPV_ARGS(&commandList)));
+		return commandList;
+	}
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> CreateClosedGraphicsCommandList(ID3D12Device& d3dDevice, UINT nodeMask, D3D12_COMMAND_LIST_TYPE type, ID3D12CommandAllocator& commandAllocator, ID3D12PipelineState* initialState)
+	{
+		auto commandList = CreateOpenedGraphicsCommandList(d3dDevice, nodeMask, type, commandAllocator, initialState);
+		D3D12::ThrowIfFailed(commandList->Close());
+		return commandList;
 	}
 }

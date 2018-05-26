@@ -10,7 +10,7 @@ namespace Maia::Renderer::D3D12::UnitTest
 	{
 	};
 
-	TEST_F(DXUtilitiesTest, ShouldSucceed_WhenCreateFactory)
+	TEST_F(DXUtilitiesTest, CreateFactory_ShouldSucceed)
 	{
 		ASSERT_NO_FATAL_FAILURE(
 			{
@@ -23,7 +23,7 @@ namespace Maia::Renderer::D3D12::UnitTest
 	class SelectAdapterTest : public DXUtilitiesTest, public ::testing::WithParamInterface<bool>
 	{
 	};
-	TEST_P(SelectAdapterTest, ShouldSucceed_WhenSelectWarpAdapter)
+	TEST_P(SelectAdapterTest, SelectAdapter_ShouldSucceed_WhenSelectWarpAdapterIsTrue)
 	{
 		auto factory = D3D12::CreateFactory(0);
 		const auto selectWarpAdapter = GetParam();
@@ -39,7 +39,7 @@ namespace Maia::Renderer::D3D12::UnitTest
 		::testing::Values(true, false)
 	);
 
-	TEST_F(DXUtilitiesTest, ShouldSelectWarpAdapter_WhenSelectWarpAdapterIsTrue)
+	TEST_F(DXUtilitiesTest, SelectAdapter_ShouldSelectWarpAdapter_WhenSelectWarpAdapterIsTrue)
 	{
 		auto factory = D3D12::CreateFactory(0);
 		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
@@ -48,7 +48,7 @@ namespace Maia::Renderer::D3D12::UnitTest
 
 		EXPECT_TRUE(description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE);
 	}
-	TEST_F(DXUtilitiesTest, ShouldSelectHardwareAdapter_WhenSelectWarpAdapterIsFalse)
+	TEST_F(DXUtilitiesTest, SelectAdapter_ShouldSelectHardwareAdapter_WhenSelectWarpAdapterIsFalse)
 	{
 		auto factory = D3D12::CreateFactory(0);
 		auto adapter = D3D12::SelectAdapter(*factory.Get(), false);
@@ -58,16 +58,82 @@ namespace Maia::Renderer::D3D12::UnitTest
 		EXPECT_FALSE(description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE);
 	}
 
-	TEST_F(DXUtilitiesTest, ShouldSucceed_WhenCreateDevice)
+	TEST_F(DXUtilitiesTest, CreateD3DDevice_ShouldSucceed)
 	{
 		auto factory = D3D12::CreateFactory(0);
 		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
 
 		ASSERT_NO_FATAL_FAILURE(
 			{
-				auto device = D3D12::CreateDevice(*adapter.Get(), D3D_FEATURE_LEVEL_11_0);
-				EXPECT_TRUE(device);
+				auto d3dDevice = D3D12::CreateD3DDevice(*adapter.Get(), D3D_FEATURE_LEVEL_11_0);
+				EXPECT_TRUE(d3dDevice);
 			}
 		);
+	}
+
+	TEST_F(DXUtilitiesTest, CreateCommandAllocator_ShouldSucceed)
+	{
+		auto factory = D3D12::CreateFactory(0);
+		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
+		auto d3dDevice = D3D12::CreateD3DDevice(*adapter.Get(), D3D_FEATURE_LEVEL_11_0);
+
+		ASSERT_NO_FATAL_FAILURE(
+			{
+				auto commandAllocator = D3D12::CreateCommandAllocator(*d3dDevice.Get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+				EXPECT_TRUE(commandAllocator);
+			}
+		);
+	}
+	
+	TEST_F(DXUtilitiesTest, CreateOpenedCommandList_ShouldSucceed)
+	{
+		auto factory = D3D12::CreateFactory(0);
+		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
+		auto d3dDevice = D3D12::CreateD3DDevice(*adapter.Get(), D3D_FEATURE_LEVEL_11_0);
+		auto commandAllocator = D3D12::CreateCommandAllocator(*d3dDevice.Get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+
+		ASSERT_NO_FATAL_FAILURE(
+			{
+				auto commandList = D3D12::CreateOpenedGraphicsCommandList(*d3dDevice.Get(), 0, D3D12_COMMAND_LIST_TYPE_DIRECT, *commandAllocator.Get(), nullptr);
+				EXPECT_TRUE(commandList);
+			}
+		);
+	}
+	TEST_F(DXUtilitiesTest, CreateOpenedCommandList_ShouldCreateOpenedCommandList)
+	{
+		auto factory = D3D12::CreateFactory(0);
+		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
+		auto d3dDevice = D3D12::CreateD3DDevice(*adapter.Get(), D3D_FEATURE_LEVEL_11_0);
+		auto commandAllocator = D3D12::CreateCommandAllocator(*d3dDevice.Get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+
+		auto commandList = D3D12::CreateOpenedGraphicsCommandList(*d3dDevice.Get(), 0, D3D12_COMMAND_LIST_TYPE_DIRECT, *commandAllocator.Get(), nullptr);
+
+		EXPECT_EQ(S_OK, commandList->Close());
+	}
+
+	TEST_F(DXUtilitiesTest, CreateClosedCommandList_ShouldSucceed)
+	{
+		auto factory = D3D12::CreateFactory(0);
+		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
+		auto d3dDevice = D3D12::CreateD3DDevice(*adapter.Get(), D3D_FEATURE_LEVEL_11_0);
+		auto commandAllocator = D3D12::CreateCommandAllocator(*d3dDevice.Get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+
+		ASSERT_NO_FATAL_FAILURE(
+			{
+				auto commandList = D3D12::CreateClosedGraphicsCommandList(*d3dDevice.Get(), 0, D3D12_COMMAND_LIST_TYPE_DIRECT, *commandAllocator.Get(), nullptr);
+				EXPECT_TRUE(commandList);
+			}
+		);
+	}
+	TEST_F(DXUtilitiesTest, CreateClosedCommandList_ShouldCreateClosedCommandList)
+	{
+		auto factory = D3D12::CreateFactory(0);
+		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
+		auto d3dDevice = D3D12::CreateD3DDevice(*adapter.Get(), D3D_FEATURE_LEVEL_11_0);
+		auto commandAllocator = D3D12::CreateCommandAllocator(*d3dDevice.Get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+
+		auto commandList = D3D12::CreateClosedGraphicsCommandList(*d3dDevice.Get(), 0, D3D12_COMMAND_LIST_TYPE_DIRECT, *commandAllocator.Get(), nullptr);
+
+		EXPECT_EQ(E_FAIL, commandList->Close());
 	}
 }
