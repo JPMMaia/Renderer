@@ -1,6 +1,6 @@
 # Enable testing and find GoogleTest:
 enable_testing()
-set(GoogleTest_DIR "${MAIA_UTILITIES_ROOT_DIR}/CMake")
+set(GoogleTest_DIR "${MAIA_UTILITIES_ROOT}/CMake")
 find_package(GoogleTest REQUIRED CONFIG)
 
 # Add unit tests:
