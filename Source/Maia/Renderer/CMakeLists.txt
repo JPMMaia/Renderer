@@ -23,4 +23,5 @@ target_link_libraries (MaiaRenderer
 	PUBLIC
 		DXGI
 		D3D12
+		WindowsApp
 )

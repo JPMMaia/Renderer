@@ -4,136 +4,90 @@
 
 using namespace Maia::Renderer;
 
-namespace Maia::Renderer::D3D12::UnitTest
+namespace Maia::Renderer::D3D12::Unit_test
 {
-	class DXUtilitiesTest : public ::testing::Test
+	class D3D12_utilities_test : public ::testing::Test
 	{
 	};
 
-	TEST_F(DXUtilitiesTest, CreateFactory_ShouldSucceed)
+	TEST_F(D3D12_utilities_test, Should_create_factory)
 	{
-		ASSERT_NO_FATAL_FAILURE(
-			{
-				auto factory = D3D12::CreateFactory({});
-				EXPECT_TRUE(factory);
-			}
-		);
+		auto const factory = D3D12::create_factory({});
+		
+		EXPECT_NE(factory, nullptr);
 	}
 
-	class SelectAdapterTest : public DXUtilitiesTest, public ::testing::WithParamInterface<bool>
+	TEST_F(D3D12_utilities_test, Should_select_software_adapter_when_select_WARP_adapter_is_true)
 	{
-	};
-	TEST_P(SelectAdapterTest, SelectAdapter_ShouldSucceed_WhenSelectWarpAdapterIsTrue)
-	{
-		auto factory = D3D12::CreateFactory(0);
-		const auto selectWarpAdapter = GetParam();
-
-		ASSERT_NO_FATAL_FAILURE(
-			{
-				auto adapter = D3D12::SelectAdapter(*factory.Get(), selectWarpAdapter);
-				EXPECT_TRUE(adapter);
-			}
-		);
-	}
-	INSTANTIATE_TEST_CASE_P(DXUtilitiesTest, SelectAdapterTest,
-		::testing::Values(true, false)
-	);
-
-	TEST_F(DXUtilitiesTest, SelectAdapter_ShouldSelectWarpAdapter_WhenSelectWarpAdapterIsTrue)
-	{
-		auto factory = D3D12::CreateFactory(0);
-		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
+		auto const factory = D3D12::create_factory({});
+		auto constexpr select_WARP_adapter = true;
+		auto const adapter = D3D12::select_adapter(*factory, select_WARP_adapter);
 		DXGI_ADAPTER_DESC1 description;
-		adapter->GetDesc1(&description);
+		winrt::check_hresult(adapter->GetDesc1(&description));
 
+		ASSERT_NE(adapter, nullptr);
 		EXPECT_TRUE(description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE);
 	}
-	TEST_F(DXUtilitiesTest, SelectAdapter_ShouldSelectHardwareAdapter_WhenSelectWarpAdapterIsFalse)
+	TEST_F(D3D12_utilities_test, Should_not_select_software_adapter_when_select_WARP_adapter_is_false)
 	{
-		auto factory = D3D12::CreateFactory(0);
-		auto adapter = D3D12::SelectAdapter(*factory.Get(), false);
+		auto const factory = D3D12::create_factory({});
+		auto constexpr select_WARP_adapter = false;
+		auto const adapter = D3D12::select_adapter(*factory, select_WARP_adapter);
 		DXGI_ADAPTER_DESC1 description;
-		adapter->GetDesc1(&description);
+		winrt::check_hresult(adapter->GetDesc1(&description));
 
+		ASSERT_NE(adapter, nullptr);
 		EXPECT_FALSE(description.Flags & DXGI_ADAPTER_FLAG_SOFTWARE);
 	}
 
-	TEST_F(DXUtilitiesTest, CreateD3DDevice_ShouldSucceed)
+	TEST_F(D3D12_utilities_test, Should_create_device)
 	{
-		auto factory = D3D12::CreateFactory(0);
-		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
+		auto const factory = D3D12::create_factory({});
+		auto constexpr select_WARP_adapter = true;
+		auto const adapter = D3D12::select_adapter(*factory, select_WARP_adapter);
 
-		ASSERT_NO_FATAL_FAILURE(
-			{
-				auto d3dDevice = D3D12::CreateD3DDevice(*adapter.Get(), D3D_FEATURE_LEVEL_11_0);
-				EXPECT_TRUE(d3dDevice);
-			}
-		);
+		auto const device = D3D12::create_device(*adapter, D3D_FEATURE_LEVEL_11_0);
+
+		EXPECT_NE(device, nullptr);
 	}
 
-	TEST_F(DXUtilitiesTest, CreateCommandAllocator_ShouldSucceed)
+	TEST_F(D3D12_utilities_test, Should_create_command_allocator)
 	{
-		auto factory = D3D12::CreateFactory(0);
-		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
-		auto d3dDevice = D3D12::CreateD3DDevice(*adapter.Get(), D3D_FEATURE_LEVEL_11_0);
+		auto const factory = D3D12::create_factory({});
+		auto constexpr select_WARP_adapter = true;
+		auto const adapter = D3D12::select_adapter(*factory, select_WARP_adapter);
+		auto const device = D3D12::create_device(*adapter, D3D_FEATURE_LEVEL_11_0);
 
-		ASSERT_NO_FATAL_FAILURE(
-			{
-				auto commandAllocator = D3D12::CreateCommandAllocator(*d3dDevice.Get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
-				EXPECT_TRUE(commandAllocator);
-			}
-		);
+		auto const command_allocator = D3D12::create_command_allocator(*device, D3D12_COMMAND_LIST_TYPE_DIRECT);
+
+		EXPECT_NE(command_allocator, nullptr);
 	}
 	
-	TEST_F(DXUtilitiesTest, CreateOpenedCommandList_ShouldSucceed)
+	TEST_F(D3D12_utilities_test, Should_create_opened_command_list)
 	{
-		auto factory = D3D12::CreateFactory(0);
-		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
-		auto d3dDevice = D3D12::CreateD3DDevice(*adapter.Get(), D3D_FEATURE_LEVEL_11_0);
-		auto commandAllocator = D3D12::CreateCommandAllocator(*d3dDevice.Get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+		auto const factory = D3D12::create_factory({});
+		auto constexpr select_WARP_adapter = true;
+		auto const adapter = D3D12::select_adapter(*factory, select_WARP_adapter);
+		auto const device = D3D12::create_device(*adapter, D3D_FEATURE_LEVEL_11_0);
+		auto const command_allocator = D3D12::create_command_allocator(*device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 
-		ASSERT_NO_FATAL_FAILURE(
-			{
-				auto commandList = D3D12::CreateOpenedGraphicsCommandList(*d3dDevice.Get(), 0, D3D12_COMMAND_LIST_TYPE_DIRECT, *commandAllocator.Get(), nullptr);
-				EXPECT_TRUE(commandList);
-			}
-		);
-	}
-	TEST_F(DXUtilitiesTest, CreateOpenedCommandList_ShouldCreateOpenedCommandList)
-	{
-		auto factory = D3D12::CreateFactory(0);
-		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
-		auto d3dDevice = D3D12::CreateD3DDevice(*adapter.Get(), D3D_FEATURE_LEVEL_11_0);
-		auto commandAllocator = D3D12::CreateCommandAllocator(*d3dDevice.Get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
-
-		auto commandList = D3D12::CreateOpenedGraphicsCommandList(*d3dDevice.Get(), 0, D3D12_COMMAND_LIST_TYPE_DIRECT, *commandAllocator.Get(), nullptr);
-
-		EXPECT_EQ(S_OK, commandList->Close());
+		auto const command_list = D3D12::create_opened_graphics_command_list(*device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, *command_allocator, nullptr);
+		
+		EXPECT_NE(command_list, nullptr);
+		EXPECT_EQ(S_OK, command_list->Close());
 	}
 
-	TEST_F(DXUtilitiesTest, CreateClosedCommandList_ShouldSucceed)
+	TEST_F(D3D12_utilities_test, Should_create_closed_command_list)
 	{
-		auto factory = D3D12::CreateFactory(0);
-		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
-		auto d3dDevice = D3D12::CreateD3DDevice(*adapter.Get(), D3D_FEATURE_LEVEL_11_0);
-		auto commandAllocator = D3D12::CreateCommandAllocator(*d3dDevice.Get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+		auto const factory = D3D12::create_factory({});
+		auto constexpr select_WARP_adapter = true;
+		auto const adapter = D3D12::select_adapter(*factory, select_WARP_adapter);
+		auto const device = D3D12::create_device(*adapter, D3D_FEATURE_LEVEL_11_0);
+		auto const command_allocator = D3D12::create_command_allocator(*device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 
-		ASSERT_NO_FATAL_FAILURE(
-			{
-				auto commandList = D3D12::CreateClosedGraphicsCommandList(*d3dDevice.Get(), 0, D3D12_COMMAND_LIST_TYPE_DIRECT, *commandAllocator.Get(), nullptr);
-				EXPECT_TRUE(commandList);
-			}
-		);
-	}
-	TEST_F(DXUtilitiesTest, CreateClosedCommandList_ShouldCreateClosedCommandList)
-	{
-		auto factory = D3D12::CreateFactory(0);
-		auto adapter = D3D12::SelectAdapter(*factory.Get(), true);
-		auto d3dDevice = D3D12::CreateD3DDevice(*adapter.Get(), D3D_FEATURE_LEVEL_11_0);
-		auto commandAllocator = D3D12::CreateCommandAllocator(*d3dDevice.Get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+		auto const command_list = D3D12::create_closed_graphics_command_list(*device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, *command_allocator, nullptr);
 
-		auto commandList = D3D12::CreateClosedGraphicsCommandList(*d3dDevice.Get(), 0, D3D12_COMMAND_LIST_TYPE_DIRECT, *commandAllocator.Get(), nullptr);
-
-		EXPECT_EQ(E_FAIL, commandList->Close());
+		EXPECT_NE(command_list, nullptr);
+		EXPECT_EQ(E_FAIL, command_list->Close());
 	}
 }

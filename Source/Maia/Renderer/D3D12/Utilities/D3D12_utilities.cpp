@@ -36,7 +36,7 @@ namespace Maia::Renderer::D3D12
 
 		return device;
 	}
-	winrt::com_ptr<ID3D12CommandAllocator> create_commandA_allocator(ID3D12Device& device, D3D12_COMMAND_LIST_TYPE type)
+	winrt::com_ptr<ID3D12CommandAllocator> create_command_allocator(ID3D12Device& device, D3D12_COMMAND_LIST_TYPE type)
 	{
 		winrt::com_ptr<ID3D12CommandAllocator> command_allocator;
 		winrt::check_hresult(
