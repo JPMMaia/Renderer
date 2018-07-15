@@ -10,7 +10,6 @@ target_include_directories(MaiaRendererUnitTest
 	
 	PRIVATE 
 		
-		"${CMAKE_SOURCE_DIR}/Source"
 		"${GOOGLE_TEST_INCLUDE_DIRECTORY}"
 
 )
