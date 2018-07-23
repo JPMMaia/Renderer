@@ -36,6 +36,19 @@ namespace Maia::Renderer::D3D12
 
 		return device;
 	}
+	winrt::com_ptr<ID3D12CommandQueue> create_command_queue(ID3D12Device& device, D3D12_COMMAND_LIST_TYPE type, INT priority, D3D12_COMMAND_QUEUE_FLAGS flags, UINT node_mask)
+	{
+		D3D12_COMMAND_QUEUE_DESC description;
+		description.Type = type;
+		description.Priority = priority;
+		description.Flags = flags;
+		description.NodeMask = node_mask;
+
+		winrt::com_ptr<ID3D12CommandQueue> command_queue;
+		device.CreateCommandQueue(&description, __uuidof(command_queue), command_queue.put_void());
+
+		return command_queue;
+	}
 	winrt::com_ptr<ID3D12CommandAllocator> create_command_allocator(ID3D12Device& device, D3D12_COMMAND_LIST_TYPE type)
 	{
 		winrt::com_ptr<ID3D12CommandAllocator> command_allocator;
@@ -65,5 +78,18 @@ namespace Maia::Renderer::D3D12
 			command_list->Close());
 
 		return command_list;
+	}
+	winrt::com_ptr<ID3D12DescriptorHeap> create_descriptor_heap(ID3D12Device& device, D3D12_DESCRIPTOR_HEAP_TYPE type, UINT num_descriptors, D3D12_DESCRIPTOR_HEAP_FLAGS flags, UINT node_mask)
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC description;
+		description.Type = type;
+		description.NumDescriptors = num_descriptors;
+		description.Flags = flags;
+		description.NodeMask = node_mask;
+
+		winrt::com_ptr<ID3D12DescriptorHeap> descriptor_heap;
+		device.CreateDescriptorHeap(&description, __uuidof(descriptor_heap), descriptor_heap.put_void());
+		
+		return descriptor_heap;
 	}
 }
