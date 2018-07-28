@@ -12,11 +12,10 @@ target_include_directories (MaiaRenderer
 )
 
 target_sources (MaiaRenderer 
+	PUBLIC
+		"${CMAKE_CURRENT_SOURCE_DIR}/D3D12/Utilities/D3D12_utilities.h"
 	PRIVATE
-
-		"D3D12/Utilities/D3D12_utilities.h"
 		"D3D12/Utilities/D3D12_utilities.cpp"
-
 )
 
 target_link_libraries (MaiaRenderer 

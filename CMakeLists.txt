@@ -1,8 +1,9 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required (VERSION 3.11)
 
-project(MaiaRenderer LANGUAGES C CXX)
+project (MaiaRenderer)
 
-set(MAIA_RENDERER_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
+list (APPEND CMAKE_MODULE_PATH "${MAIA_RENDERER_ROOT}/CMake")
+list (APPEND CMAKE_MODULE_PATH "${MAIA_UTILITIES_ROOT}/CMake")
 
-add_subdirectory("Source")
-add_subdirectory("Test")
+add_subdirectory ("Source")
+add_subdirectory ("Test")
