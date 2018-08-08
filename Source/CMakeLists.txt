@@ -26,22 +26,9 @@ target_link_libraries (MaiaRenderer
 
 target_sources (MaiaRenderer 
 	PRIVATE
-		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.h"
+		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.hpp"
 		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.cpp"
 )
-
-include (FetchContent)
-FetchContent_Declare (
-	MaiaUtilities
-	GIT_REPOSITORY "https://github.com/JPMMaia/Utilities.git"
-	GIT_TAG "master"
-)
-
-FetchContent_GetProperties (MaiaUtilities)
-if (NOT maiautilities_POPULATED)
-	FetchContent_Populate (MaiaUtilities)
-    add_subdirectory (${maiautilities_SOURCE_DIR} ${maiautilities_BINARY_DIR})
-endif ()
 
 
 install (TARGETS MaiaRenderer EXPORT MaiaRendererTargets
@@ -52,7 +39,7 @@ install (TARGETS MaiaRenderer EXPORT MaiaRendererTargets
 )
 install (DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/Maia"
 		DESTINATION "include"
-        FILES_MATCHING PATTERN "*.hpp" ".h"
+        FILES_MATCHING PATTERN "*.hpp"
 )
 install (EXPORT MaiaRendererTargets
 	FILE "MaiaRendererTargets.cmake"

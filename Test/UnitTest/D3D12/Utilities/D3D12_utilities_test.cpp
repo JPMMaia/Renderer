@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <Maia/Renderer/D3D12/Utilities/D3D12_utilities.h>
+#include <Maia/Renderer/D3D12/Utilities/D3D12_utilities.hpp>
 
 using namespace Maia::Renderer;
 

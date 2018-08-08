@@ -1,4 +1,4 @@
-#include "D3D12_utilities.h"
+#include "D3D12_utilities.hpp"
 
 namespace Maia::Renderer::D3D12
 {
