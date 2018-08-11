@@ -22,6 +22,7 @@ target_link_libraries (MaiaRenderer
 	PRIVATE
 		DXGI
 		D3D12
+		WindowsApp
 )
 
 target_sources (MaiaRenderer 
