@@ -25,8 +25,13 @@ target_link_libraries (MaiaRenderer
 		WindowsApp
 )
 
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+target_link_libraries (MaiaRenderer PUBLIC Eigen3::Eigen)
+
 target_sources (MaiaRenderer 
 	PRIVATE
+		"Maia/Renderer/D3D12/D3D12_renderer.hpp"
+		"Maia/Renderer/D3D12/D3D12_renderer.cpp"
 		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.hpp"
 		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.cpp"
 )
