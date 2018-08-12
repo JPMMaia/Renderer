@@ -36,11 +36,11 @@ find_package_handle_standard_args (D3D12RaytracingFallback
 
 if (D3D12RaytracingFallback_FOUND AND NOT TARGET D3D12::RaytracingFallback)
     
-    add_library (D3D12::RaytracingFallback UNKNOWN IMPORTED)
+    add_library (D3D12::RaytracingFallback OBJECT IMPORTED)
 
     set_target_properties(D3D12::RaytracingFallback PROPERTIES
         INTERFACE_INCLUDE_DIRECTORIES "${D3D12RaytracingFallback_INCLUDE_DIR}"
-        IMPORTED_LOCATION "${D3D12RaytracingFallback_LOCATION}"
+        RUNTIME_DIRECTORY "${D3D12RaytracingFallback_LOCATION}"
     )
     
 endif ()
