@@ -51,10 +51,10 @@ namespace Mythology
 			return buffer;
 		}
 
-		D3D12_HEAP_PROPERTIES create_upload_heap_properties()
+		D3D12_HEAP_PROPERTIES create_heap_properties(D3D12_HEAP_TYPE const type)
 		{
 			D3D12_HEAP_PROPERTIES properties;
-			properties.Type = D3D12_HEAP_TYPE_UPLOAD;
+			properties.Type = type;
 			properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
 			properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
 			properties.CreationNodeMask = 0;
@@ -90,7 +90,7 @@ namespace Mythology
 			auto const triangle_vertices = create_triangle_vertex_data();
 			auto const size_in_bytes = sizeof(decltype(triangle_vertices)::value_type) * triangle_vertices.size();
 
-			auto const upload_heap_properties = create_upload_heap_properties();
+			auto const upload_heap_properties = create_heap_properties(D3D12_HEAP_TYPE_UPLOAD);
 			auto const buffer = create_buffer(
 				device,
 				sizeof(decltype(triangle_vertices)::value_type) * triangle_vertices.size(),
@@ -101,13 +101,65 @@ namespace Mythology
 			);
 
 			copy_data(*buffer, triangle_vertices.data(), size_in_bytes);
-
+			
 			return buffer;
 		}
 
-		void create_bottom_level_acceleration_structure(ID3D12Device& device, ID3D12GraphicsCommandList& command_list, ID3D12Resource& vertex_buffer)
+		D3D12_RAYTRACING_GEOMETRY_DESC create_raytracing_geometry_description(ID3D12Resource& vertex_buffer)
 		{
 			D3D12_RAYTRACING_GEOMETRY_DESC description;
+			description.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+			description.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+			description.Triangles = [&] {
+				D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC trianglesDescription;
+				trianglesDescription.Transform = {};
+				trianglesDescription.IndexFormat = {};
+				trianglesDescription.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+				trianglesDescription.IndexCount = 0;
+				trianglesDescription.VertexCount = 3;
+				trianglesDescription.IndexBuffer = {};
+				trianglesDescription.VertexBuffer.StartAddress = vertex_buffer.GetGPUVirtualAddress();
+				trianglesDescription.VertexBuffer.StrideInBytes = sizeof(Eigen::Vector3f);
+				return trianglesDescription;
+			}();
+
+			return description;
+		}
+
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO create_raytracing_acceleration_structure_prebuild_info(ID3D12DeviceRaytracingPrototype& raytracing_device)
+		{
+			D3D12_GET_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO_DESC description;
+			description.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+			description.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+			description.NumDescs = 1;
+			description.pGeometryDescs = &geomDesc;
+			description.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+
+			D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO info;
+			raytracing_device.GetRaytracingAccelerationStructurePrebuildInfo(&description, &info);
+			
+			return info;
+		}
+
+		void create_bottom_level_acceleration_structure(ID3D12Device& device, ID3D12DeviceRaytracingPrototype& raytracing_device, ID3D12GraphicsCommandList& command_list, ID3D12Resource& vertex_buffer)
+		{
+			auto const geometry_description = create_raytracing_geometry_description(vertex_buffer);
+			
+			auto const prebuild_info = create_raytracing_acceleration_structure_prebuild_info(raytracing_device);
+
+			auto const default_heap_properties = create_heap_properties(D3D12_HEAP_TYPE_DEFAULT);
+			auto const scratch_buffer = create_buffer(
+				device, 
+				prebuild_info.ScratchDataSizeInBytes, default_heap_properties, 
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
+			);
+			auto const destination_buffer = create_buffer(
+				device,
+				prebuild_info.ResultDataMaxSizeInBytes, default_heap_properties,
+				D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, nullptr, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
+			);
+
+			
 		}
 	}
 	D3D12_renderer::D3D12_renderer() :
