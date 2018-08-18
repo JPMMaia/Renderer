@@ -1,6 +1,8 @@
 #include <array>
 
+#include <d3dx12.h>
 #include <Eigen/Eigen>
+#include <gsl/gsl>
 
 #include <Maia/Renderer/D3D12/Utilities/D3D12_utilities.hpp>
 
@@ -126,13 +128,15 @@ namespace Mythology
 			return description;
 		}
 
-		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO create_raytracing_acceleration_structure_prebuild_info(ID3D12DeviceRaytracingPrototype& raytracing_device)
+		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO create_raytracing_acceleration_structure_prebuild_info(
+			ID3D12DeviceRaytracingPrototype& raytracing_device, 
+			gsl::span<const D3D12_RAYTRACING_GEOMETRY_DESC> geometry_descriptions)
 		{
 			D3D12_GET_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO_DESC description;
 			description.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 			description.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
-			description.NumDescs = 1;
-			description.pGeometryDescs = &geomDesc;
+			description.NumDescs = gsl::narrow<UINT>(geometry_descriptions.size());
+			description.pGeometryDescs = geometry_descriptions.data();
 			description.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
 
 			D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO info;
@@ -143,11 +147,11 @@ namespace Mythology
 
 		void create_bottom_level_acceleration_structure(
 			ID3D12Device& device, ID3D12DeviceRaytracingPrototype& raytracing_device, 
-			ID3D12CommandListRaytracingPrototype& raytracing_command_list, 
+			ID3D12GraphicsCommandList& command_list, ID3D12CommandListRaytracingPrototype& raytracing_command_list, 
 			ID3D12Resource& vertex_buffer)
 		{
 			auto const geometry_description = create_raytracing_geometry_description(vertex_buffer);
-			auto const prebuild_info = create_raytracing_acceleration_structure_prebuild_info(raytracing_device);
+			auto const prebuild_info = create_raytracing_acceleration_structure_prebuild_info(raytracing_device, { &geometry_description, 1 });
 
 			auto const default_heap_properties = create_heap_properties(D3D12_HEAP_TYPE_DEFAULT);
 			auto const scratch_buffer = create_buffer(
@@ -155,14 +159,14 @@ namespace Mythology
 				prebuild_info.ScratchDataSizeInBytes, default_heap_properties, 
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
 			);
-			auto const destination_buffer = create_buffer(
+			auto const result_buffer = create_buffer(
 				device,
 				prebuild_info.ResultDataMaxSizeInBytes, default_heap_properties,
 				D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, nullptr, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
 			);
 
 			D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC description;
-			description.DestAccelerationStructureData.StartAddress = destination_buffer->GetGPUVirtualAddress();
+			description.DestAccelerationStructureData.StartAddress = result_buffer->GetGPUVirtualAddress();
 			description.DestAccelerationStructureData.SizeInBytes = prebuild_info.ResultDataMaxSizeInBytes;
 			description.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
 			description.NumDescs = 1;
@@ -173,7 +177,12 @@ namespace Mythology
 			description.ScratchAccelerationStructureData.StartAddress = scratch_buffer->GetGPUVirtualAddress();
 			description.ScratchAccelerationStructureData.SizeInBytes = prebuild_info.ScratchDataSizeInBytes;
 			
-			raytracing_command_list->BuildRaytracingAccelerationStructure(&description);
+			raytracing_command_list.BuildRaytracingAccelerationStructure(&description);
+
+			auto const uav_barrier = CD3DX12_RESOURCE_BARRIER::UAV(result_buffer.get());
+			command_list.ResourceBarrier(1, &uav_barrier);
+
+			// TODO the scratch buffer must not be released until the command list is executed.
 		}
 	}
 	D3D12_renderer::D3D12_renderer() :

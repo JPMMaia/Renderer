@@ -25,6 +25,8 @@ target_link_libraries (MaiaRenderer
 		WindowsApp
 )
  
+ target_link_libraries (MaiaRenderer PRIVATE Maia::Utilities)
+
 find_package (D3D12RaytracingFallback REQUIRED)
 target_link_libraries (MaiaRenderer PUBLIC D3D12::RaytracingFallback)
 add_custom_command (TARGET MaiaRenderer POST_BUILD COMMAND ${CMAKE_COMMAND} -E 
