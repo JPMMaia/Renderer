@@ -141,10 +141,12 @@ namespace Mythology
 			return info;
 		}
 
-		void create_bottom_level_acceleration_structure(ID3D12Device& device, ID3D12DeviceRaytracingPrototype& raytracing_device, ID3D12GraphicsCommandList& command_list, ID3D12Resource& vertex_buffer)
+		void create_bottom_level_acceleration_structure(
+			ID3D12Device& device, ID3D12DeviceRaytracingPrototype& raytracing_device, 
+			ID3D12CommandListRaytracingPrototype& raytracing_command_list, 
+			ID3D12Resource& vertex_buffer)
 		{
 			auto const geometry_description = create_raytracing_geometry_description(vertex_buffer);
-			
 			auto const prebuild_info = create_raytracing_acceleration_structure_prebuild_info(raytracing_device);
 
 			auto const default_heap_properties = create_heap_properties(D3D12_HEAP_TYPE_DEFAULT);
@@ -159,7 +161,19 @@ namespace Mythology
 				D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, nullptr, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
 			);
 
+			D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC description;
+			description.DestAccelerationStructureData.StartAddress = destination_buffer->GetGPUVirtualAddress();
+			description.DestAccelerationStructureData.SizeInBytes = prebuild_info.ResultDataMaxSizeInBytes;
+			description.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+			description.NumDescs = 1;
+			description.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+			description.pGeometryDescs = &geometry_description;
+			description.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+			description.SourceAccelerationStructureData = {};
+			description.ScratchAccelerationStructureData.StartAddress = scratch_buffer->GetGPUVirtualAddress();
+			description.ScratchAccelerationStructureData.SizeInBytes = prebuild_info.ScratchDataSizeInBytes;
 			
+			raytracing_command_list->BuildRaytracingAccelerationStructure(&description);
 		}
 	}
 	D3D12_renderer::D3D12_renderer() :
