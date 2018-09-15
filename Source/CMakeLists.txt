@@ -7,6 +7,11 @@ set_target_properties (MaiaRenderer PROPERTIES
 	LINKER_LANGUAGE "CXX"
 )
 
+target_compile_definitions(MaiaRenderer
+	PRIVATE	
+		"NOMINMAX"
+)
+
 target_compile_features (MaiaRenderer 
 	PRIVATE 
 		cxx_std_17
@@ -29,10 +34,10 @@ target_link_libraries (MaiaRenderer
 
 find_package (D3D12RaytracingFallback REQUIRED)
 target_link_libraries (MaiaRenderer PUBLIC D3D12::RaytracingFallback)
-add_custom_command (TARGET MaiaRenderer POST_BUILD COMMAND ${CMAKE_COMMAND} -E 
+#[[add_custom_command (TARGET MaiaRenderer POST_BUILD COMMAND ${CMAKE_COMMAND} -E 
     copy_directory
         "$<TARGET_PROPERTY:D3D12::RaytracingFallback,RUNTIME_DIRECTORY>" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
-)
+)]]#
 
 find_package (Eigen3 REQUIRED)
 target_link_libraries (MaiaRenderer PUBLIC Eigen3::Eigen)

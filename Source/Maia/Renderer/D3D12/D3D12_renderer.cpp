@@ -234,7 +234,7 @@ namespace Mythology
 			description.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 			description.NumDescs = 1;
 			description.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-			description.pGeometryDescs = &geometry_description;
+			//description.pGeometryDescs = &geometry_description;
 			description.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
 			description.SourceAccelerationStructureData = {};
 			description.ScratchAccelerationStructureData.StartAddress = scratch_buffer->GetGPUVirtualAddress();
