@@ -34,7 +34,7 @@ add_custom_command (TARGET MaiaRenderer POST_BUILD COMMAND ${CMAKE_COMMAND} -E
         "$<TARGET_PROPERTY:D3D12::RaytracingFallback,RUNTIME_DIRECTORY>" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )
 
-find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+find_package (Eigen3 REQUIRED)
 target_link_libraries (MaiaRenderer PUBLIC Eigen3::Eigen)
 
 target_sources (MaiaRenderer 
