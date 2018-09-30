@@ -211,7 +211,9 @@ namespace Mythology
 		AccelerationStructureBuffers create_top_level_acceleration_structure(
 			ID3D12Device& device, ID3D12DeviceRaytracingPrototype& raytracing_device,
 			ID3D12GraphicsCommandList& command_list, ID3D12CommandListRaytracingPrototype& raytracing_command_list, 
-			UINT const instance_count)
+			D3D12_GPU_VIRTUAL_ADDRESS bottomLevelAccelerationStructureAddress,
+			UINT const instance_count
+		)
 		{
 			auto const prebuild_info = create_raytracing_acceleration_structure_prebuild_info(
 				raytracing_device, instance_count);
@@ -219,14 +221,53 @@ namespace Mythology
 			auto const default_heap_properties = create_heap_properties(D3D12_HEAP_TYPE_DEFAULT);
 			auto scratch_buffer = create_buffer(
 				device,
-				prebuild_info.ScratchDataSizeInBytes, default_heap_properties,
-				D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
+				prebuild_info.ScratchDataSizeInBytes, 
+				default_heap_properties,
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 
+				nullptr, 
+				D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
 			);
 			auto result_buffer = create_buffer(
 				device,
-				prebuild_info.ResultDataMaxSizeInBytes, default_heap_properties,
-				D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, nullptr, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
+				prebuild_info.ResultDataMaxSizeInBytes, 
+				default_heap_properties,
+				D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, 
+				nullptr, 
+				D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
 			);
+			
+			auto instance_description_buffer = create_buffer(
+				device, 
+				sizeof(D3D12_RAYTRACING_INSTANCE_DESC), 
+				default_heap_properties,
+				D3D12_RESOURCE_STATE_GENERIC_READ
+			);
+			
+			{
+				const auto instance_description = [&]() ->D3D12_RAYTRACING_INSTANCE_DESC
+				{
+					D3D12_RAYTRACING_INSTANCE_DESC instance_description;
+
+					Eigen::Affine3f transform{ Eigen::Affine3f::Identity() };
+					std::memcpy(instance_description.Transform, transform.data(), sizeof(instance_description.Transform));
+
+					instance_description.InstanceID = 0;
+					instance_description.InstanceMask = 0xFF;
+					instance_description.InstanceContributionToHitGroupIndex = 0;
+					instance_description.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+					instance_description.AccelerationStructure = bottomLevelAccelerationStructureAddress;
+
+					return instance_description;
+				}();
+
+				D3D12_RAYTRACING_INSTANCE_DESC* mapped_memory;
+				instance_description_buffer->Map(0, nullptr, reinterpret_cast<void**>(&mapped_memory));
+				*mapped_memory = instance_description;
+
+				
+				instance_description_buffer->Unmap(0, );
+			}
+			
 
 			D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC description;
 			description.DestAccelerationStructureData.StartAddress = result_buffer->GetGPUVirtualAddress();
@@ -234,7 +275,7 @@ namespace Mythology
 			description.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 			description.NumDescs = 1;
 			description.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-			//description.pGeometryDescs = &geometry_description;
+			//description.InstanceDescs;
 			description.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
 			description.SourceAccelerationStructureData = {};
 			description.ScratchAccelerationStructureData.StartAddress = scratch_buffer->GetGPUVirtualAddress();
