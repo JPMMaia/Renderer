@@ -8,7 +8,7 @@
 #include <dxgi1_6.h>
 #include <d3d12_1.h>
 
-namespace Mythology
+namespace Maia::Renderer::D3D12
 {
 	class D3D12_renderer
 	{

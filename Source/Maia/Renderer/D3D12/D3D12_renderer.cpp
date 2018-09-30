@@ -5,12 +5,11 @@
 #include <gsl/gsl>
 
 #include <Maia/Renderer/D3D12/Utilities/D3D12_utilities.hpp>
+#include <Maia/Renderer/D3D12/Utilities/Mapped_memory.hpp>
 
 #include <Maia/Renderer/D3D12/D3D12_renderer.hpp>
 
-using namespace Maia::Renderer::D3D12;
-
-namespace Mythology
+namespace Maia::Renderer::D3D12
 {
 	namespace
 	{
@@ -36,7 +35,7 @@ namespace Mythology
 			description.SampleDesc.Quality = 0;
 			description.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 			description.Flags = flags;
-			
+
 			winrt::com_ptr<ID3D12Resource> buffer;
 			winrt::check_hresult(
 				device.CreateCommittedResource(
@@ -67,7 +66,7 @@ namespace Mythology
 
 		std::array<Eigen::Vector3f, 3> create_triangle_vertex_data()
 		{
-			return 
+			return
 			{
 				Eigen::Vector3f(0.0f, 1.0f, 0.0f),
 				Eigen::Vector3f(0.5f, -0.5f, 0.0f),
@@ -81,9 +80,9 @@ namespace Mythology
 			std::byte* mapped_data;
 			winrt::check_hresult(
 				resource.Map(0, nullptr, reinterpret_cast<void**>(&mapped_data)));
-			
+
 			std::memcpy(mapped_data, data, size_in_bytes);
-			
+
 			resource.Unmap(0, nullptr);
 		}
 
@@ -103,7 +102,7 @@ namespace Mythology
 			);
 
 			copy_data(*buffer, triangle_vertices.data(), size_in_bytes);
-			
+
 			return buffer;
 		}
 
@@ -129,7 +128,7 @@ namespace Mythology
 		}
 
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO create_raytracing_acceleration_structure_prebuild_info(
-			ID3D12DeviceRaytracingPrototype& raytracing_device, 
+			ID3D12DeviceRaytracingPrototype& raytracing_device,
 			gsl::span<const D3D12_RAYTRACING_GEOMETRY_DESC> geometry_descriptions)
 		{
 			D3D12_GET_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO_DESC description;
@@ -141,7 +140,7 @@ namespace Mythology
 
 			D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO info;
 			raytracing_device.GetRaytracingAccelerationStructurePrebuildInfo(&description, &info);
-			
+
 			return info;
 		}
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO create_raytracing_acceleration_structure_prebuild_info(
@@ -160,16 +159,15 @@ namespace Mythology
 			return info;
 		}
 
-		struct AccelerationStructureBuffers
+		struct BottomLevelAccelerationStructureBuffers
 		{
 			winrt::com_ptr<ID3D12Resource> scratch;
 			winrt::com_ptr<ID3D12Resource> result;
-			winrt::com_ptr<ID3D12Resource> instance_description;
 		};
 
-		AccelerationStructureBuffers create_bottom_level_acceleration_structure(
-			ID3D12Device& device, ID3D12DeviceRaytracingPrototype& raytracing_device, 
-			ID3D12GraphicsCommandList& command_list, ID3D12CommandListRaytracingPrototype& raytracing_command_list, 
+		BottomLevelAccelerationStructureBuffers create_bottom_level_acceleration_structure(
+			ID3D12Device& device, ID3D12DeviceRaytracingPrototype& raytracing_device,
+			ID3D12GraphicsCommandList& command_list, ID3D12CommandListRaytracingPrototype& raytracing_command_list,
 			ID3D12Resource& vertex_buffer)
 		{
 			auto const geometry_description = create_raytracing_geometry_description(vertex_buffer);
@@ -178,8 +176,8 @@ namespace Mythology
 
 			auto const default_heap_properties = create_heap_properties(D3D12_HEAP_TYPE_DEFAULT);
 			auto scratch_buffer = create_buffer(
-				device, 
-				prebuild_info.ScratchDataSizeInBytes, default_heap_properties, 
+				device,
+				prebuild_info.ScratchDataSizeInBytes, default_heap_properties,
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
 			);
 			auto result_buffer = create_buffer(
@@ -199,18 +197,29 @@ namespace Mythology
 			description.SourceAccelerationStructureData = {};
 			description.ScratchAccelerationStructureData.StartAddress = scratch_buffer->GetGPUVirtualAddress();
 			description.ScratchAccelerationStructureData.SizeInBytes = prebuild_info.ScratchDataSizeInBytes;
-			
+
 			raytracing_command_list.BuildRaytracingAccelerationStructure(&description);
 
 			auto const uav_barrier = CD3DX12_RESOURCE_BARRIER::UAV(result_buffer.get());
 			command_list.ResourceBarrier(1, &uav_barrier);
 
-			return { std::move(scratch_buffer), std::move(result_buffer) };
+			return 
+			{ 
+				std::move(scratch_buffer), 
+				std::move(result_buffer) 
+			};
 		}
 
-		AccelerationStructureBuffers create_top_level_acceleration_structure(
+		struct TopLevelAccelerationStructureBuffers
+		{
+			winrt::com_ptr<ID3D12Resource> scratch;
+			winrt::com_ptr<ID3D12Resource> result;
+			winrt::com_ptr<ID3D12Resource> instance_description;
+		};
+
+		TopLevelAccelerationStructureBuffers create_top_level_acceleration_structure(
 			ID3D12Device& device, ID3D12DeviceRaytracingPrototype& raytracing_device,
-			ID3D12GraphicsCommandList& command_list, ID3D12CommandListRaytracingPrototype& raytracing_command_list, 
+			ID3D12GraphicsCommandList& command_list, ID3D12CommandListRaytracingPrototype& raytracing_command_list,
 			D3D12_GPU_VIRTUAL_ADDRESS bottomLevelAccelerationStructureAddress,
 			UINT const instance_count
 		)
@@ -221,28 +230,28 @@ namespace Mythology
 			auto const default_heap_properties = create_heap_properties(D3D12_HEAP_TYPE_DEFAULT);
 			auto scratch_buffer = create_buffer(
 				device,
-				prebuild_info.ScratchDataSizeInBytes, 
+				prebuild_info.ScratchDataSizeInBytes,
 				default_heap_properties,
-				D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 
-				nullptr, 
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+				nullptr,
 				D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
 			);
 			auto result_buffer = create_buffer(
 				device,
-				prebuild_info.ResultDataMaxSizeInBytes, 
+				prebuild_info.ResultDataMaxSizeInBytes,
 				default_heap_properties,
-				D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, 
-				nullptr, 
+				D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE,
+				nullptr,
 				D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
 			);
-			
+
 			auto instance_description_buffer = create_buffer(
-				device, 
-				sizeof(D3D12_RAYTRACING_INSTANCE_DESC), 
+				device,
+				sizeof(D3D12_RAYTRACING_INSTANCE_DESC),
 				default_heap_properties,
 				D3D12_RESOURCE_STATE_GENERIC_READ
 			);
-			
+
 			{
 				const auto instance_description = [&]() ->D3D12_RAYTRACING_INSTANCE_DESC
 				{
@@ -260,14 +269,9 @@ namespace Mythology
 					return instance_description;
 				}();
 
-				D3D12_RAYTRACING_INSTANCE_DESC* mapped_memory;
-				instance_description_buffer->Map(0, nullptr, reinterpret_cast<void**>(&mapped_memory));
-				*mapped_memory = instance_description;
-
-				
-				instance_description_buffer->Unmap(0, );
+				Mapped_memory mapped_memory{ *instance_description_buffer, 0, {} };
+				mapped_memory.write(instance_description);
 			}
-			
 
 			D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC description;
 			description.DestAccelerationStructureData.StartAddress = result_buffer->GetGPUVirtualAddress();
@@ -275,7 +279,7 @@ namespace Mythology
 			description.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 			description.NumDescs = 1;
 			description.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-			//description.InstanceDescs;
+			description.InstanceDescs = instance_description_buffer->GetGPUVirtualAddress();
 			description.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
 			description.SourceAccelerationStructureData = {};
 			description.ScratchAccelerationStructureData.StartAddress = scratch_buffer->GetGPUVirtualAddress();
@@ -286,9 +290,15 @@ namespace Mythology
 			auto const uav_barrier = CD3DX12_RESOURCE_BARRIER::UAV(result_buffer.get());
 			command_list.ResourceBarrier(1, &uav_barrier);
 
-			return { std::move(scratch_buffer), std::move(result_buffer) };
+			return 
+			{ 
+				std::move(scratch_buffer), 
+				std::move(result_buffer), 
+				std::move(instance_description_buffer) 
+			};
 		}
 	}
+
 	D3D12_renderer::D3D12_renderer() :
 		m_pipeline_length{ 3 },
 		m_factory{ create_factory({}) },
@@ -341,9 +351,9 @@ namespace Mythology
 	void D3D12_renderer::window(IUnknown& window)
 	{
 		m_swap_chain = create_swap_chain(
-			*m_factory, 
-			*m_direct_command_queue, 
-			window, 
+			*m_factory,
+			*m_direct_command_queue,
+			window,
 			static_cast<UINT>(m_pipeline_length)
 		);
 	}
