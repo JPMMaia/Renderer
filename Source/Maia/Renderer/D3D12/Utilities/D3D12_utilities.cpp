@@ -28,6 +28,24 @@ namespace Maia::Renderer::D3D12
 			return hardware_adapter;
 		}
 	}
+	winrt::com_ptr<IDXGISwapChain4> create_swap_chain(IDXGIFactory6& factory, IUnknown& device, IUnknown& window, DXGI_FORMAT format)
+	{
+		DXGI_SWAP_CHAIN_DESC1 description{};
+		description.Format = format;
+		description.SampleDesc.Count = 1;
+		description.SampleDesc.Quality = 0;
+		description.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		description.BufferCount = 2;
+		description.Scaling = DXGI_SCALING_NONE;
+		description.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+
+		winrt::com_ptr<IDXGISwapChain1> swap_chain;
+		winrt::check_hresult(
+			factory.CreateSwapChainForCoreWindow(&device, &window, &description, nullptr, swap_chain.put()));
+
+		return swap_chain.as<IDXGISwapChain4>();
+	}
+
 	winrt::com_ptr<ID3D12Device4> create_device(IDXGIAdapter& adapter, D3D_FEATURE_LEVEL const minimum_feature_level)
 	{
 		winrt::com_ptr<ID3D12Device4> device;
