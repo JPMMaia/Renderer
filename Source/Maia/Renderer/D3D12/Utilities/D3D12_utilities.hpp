@@ -1,3 +1,6 @@
+#ifndef MAIA_RENDERER_D3D12UTILITIES_H_INCLUDED
+#define MAIA_RENDERER_D3D12UTILITIES_H_INCLUDED
+
 #include <stdexcept>
 
 #include <winrt/base.h>
@@ -18,3 +21,5 @@ namespace Maia::Renderer::D3D12
 	[[nodiscard]] winrt::com_ptr<ID3D12DescriptorHeap> create_descriptor_heap(ID3D12Device& device, D3D12_DESCRIPTOR_HEAP_TYPE type, UINT num_descriptors, D3D12_DESCRIPTOR_HEAP_FLAGS flags, UINT node_mask);
 	[[nodiscard]] winrt::com_ptr<ID3D12Fence> create_fence(ID3D12Device& device, UINT64 initial_value, D3D12_FENCE_FLAGS flags);
 }
+
+#endif

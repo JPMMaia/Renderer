@@ -48,6 +48,8 @@ target_sources (MaiaRenderer
 		"Maia/Renderer/D3D12/D3D12_renderer.cpp"
 		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.hpp"
 		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.cpp"
+		"Maia/Renderer/D3D12/Utilities/Mapped_memory.hpp"
+		"Maia/Renderer/D3D12/Utilities/Mapped_memory.cpp"
 )
 
 
