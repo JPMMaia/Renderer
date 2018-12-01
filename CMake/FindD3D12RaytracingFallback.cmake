@@ -2,7 +2,7 @@ include (FetchContent)
 
 FetchContent_Declare (
     DirectXRaytracingBinaries
-    URL "https://github.com/Microsoft/DirectX-Graphics-Samples/releases/download/v1.3-dxr/DirectXRaytracingBinariesV1.3.zip"
+    URL "https://github.com/Microsoft/DirectX-Graphics-Samples/releases/download/v1.5-dxr/DirectXRaytracingBinaries1.5.zip"
 )
 
 FetchContent_GetProperties (DirectXRaytracingBinaries)
@@ -13,7 +13,7 @@ endif ()
 
 FetchContent_Declare (
     DirectXRaytracingSource
-    URL "https://github.com/Microsoft/DirectX-Graphics-Samples/archive/v1.3-dxr.zip"
+    URL "https://github.com/Microsoft/DirectX-Graphics-Samples/archive/v1.5-dxr.zip"
 )
 
 FetchContent_GetProperties (DirectXRaytracingSource)
