@@ -44,8 +44,6 @@ target_link_libraries (MaiaRenderer PUBLIC Eigen3::Eigen)
 
 target_sources (MaiaRenderer 
 	PRIVATE
-		"Maia/Renderer/D3D12/D3D12_renderer.hpp"
-		"Maia/Renderer/D3D12/D3D12_renderer.cpp"
 		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.hpp"
 		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.cpp"
 		"Maia/Renderer/D3D12/Utilities/Mapped_memory.hpp"
