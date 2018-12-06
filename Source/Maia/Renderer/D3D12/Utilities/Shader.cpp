@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 
 #include <winrt/base.h>
@@ -30,19 +31,35 @@ namespace Maia::Renderer::D3D12
 
 			if (FAILED(result))
 			{
-				std::wstring_view error_messages
-				{ 
-					reinterpret_cast<wchar_t*>(error_messages_blob->GetBufferPointer()), 
-					static_cast<std::size_t>(error_messages_blob->GetBufferSize())
-				};
-				
-				std::cerr << error_messages.data();
+				if (error_messages_blob)
+				{
+					std::wstring_view error_messages
+					{
+						reinterpret_cast<wchar_t*>(error_messages_blob->GetBufferPointer()),
+						static_cast<std::size_t>(error_messages_blob->GetBufferSize())
+					};
+
+					std::cerr << error_messages.data();
+				}
 
 				winrt::check_hresult(result);
 			}
 
 			return shader_blob;
 		}
+
+		winrt::com_ptr<ID3DBlob> create_shader_blob(std::filesystem::path const& compiled_shader_path)
+		{
+			winrt::com_ptr<ID3DBlob> shader_blob;
+			winrt::check_hresult(
+				D3DReadFileToBlob(compiled_shader_path.c_str(), shader_blob.put()));
+			return shader_blob;
+		}
+	}
+
+	Shader::Shader(std::filesystem::path const& compiled_shader_path) :
+		shader_blob{ create_shader_blob(compiled_shader_path) }
+	{
 	}
 
 	Shader::Shader(std::filesystem::path const& shader_path, std::string_view entry_point, std::string_view target) :

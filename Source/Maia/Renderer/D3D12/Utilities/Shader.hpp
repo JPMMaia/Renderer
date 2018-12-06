@@ -12,6 +12,7 @@ namespace Maia::Renderer::D3D12
 	{
 		winrt::com_ptr<ID3DBlob> shader_blob;
 
+		explicit Shader(std::filesystem::path const& compiled_shader_path);
 		Shader(std::filesystem::path const& shader_path, std::string_view entry_point, std::string_view target);
 
 		D3D12_SHADER_BYTECODE bytecode() const;
