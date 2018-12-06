@@ -78,6 +78,16 @@ namespace Maia::Renderer::D3D12
 
 		return command_allocator;
 	}
+	std::vector<winrt::com_ptr<ID3D12CommandAllocator>> create_command_allocators(ID3D12Device& device, D3D12_COMMAND_LIST_TYPE type, std::size_t count)
+	{
+		std::vector<winrt::com_ptr<ID3D12CommandAllocator>> command_allocators;
+		command_allocators.reserve(count);
+
+		for (std::size_t i = 0; i < count; ++i)
+			command_allocators.emplace_back(create_command_allocator(device, type));
+
+		return command_allocators;
+	}
 	winrt::com_ptr<ID3D12GraphicsCommandList> create_opened_graphics_command_list(
 		ID3D12Device& device, UINT const node_mask, D3D12_COMMAND_LIST_TYPE const type, 
 		ID3D12CommandAllocator& command_allocator, ID3D12PipelineState* const initial_state
