@@ -1,24 +1,30 @@
-function(target_add_hlsl_shader target_name relative_directory shader_name)
+function(target_add_hlsl_shader target_name group input_filename output_filename entry_point_name target_profile deploy additional_options)
 
-	set(input_filename "${CMAKE_CURRENT_SOURCE_DIR}/${relative_directory}/${shader_name}.hlsl")	
-	set(output_filename "${CMAKE_CFG_INTDIR}/${relative_directory}/${shader_name}.csv")
-
-	find_file(FXC "fxc.exe")
-	message("PATH TO FXC: ${FXC}")
+	find_program(FXC "fxc.exe")
 
 	add_custom_command(
-		COMMAND ${FXC} ARGS -V "${input_filename}" -o "${output_filename}"
+		COMMAND ${FXC} ARGS /E "${entry_point_name}" /T "${target_profile}" /Fo "${output_filename}" "${additional_options}" "${input_filename}"
 		MAIN_DEPENDENCY "${input_filename}"
 		OUTPUT "${output_filename}"
 		USES_TERMINAL
 	)
 
 	target_sources(${target_name} PRIVATE 
-		"${input_filename}" 
-		"${CMAKE_CURRENT_BINARY_DIR}/${output_filename}"
+		"${input_filename}"
+		"${output_filename}"
 	)
 
-	source_group("Resource Files\\${relative_directory}" FILES "${input_filename}")
-	source_group("Generated Files\\${relative_directory}" FILES "${CMAKE_CURRENT_BINARY_DIR}/${output_filename}")
+	source_group("Resource Files\\${group}" FILES "${input_filename}")
+	source_group("Generated Files\\${group}" FILES "${output_filename}")
+
+	if(${deploy})
+		set_source_files_properties(
+			"${input_filename}"
+				PROPERTIES 
+					VS_DEPLOYMENT_CONTENT 1
+					VS_DEPLOYMENT_LOCATION "${group}"
+		)
+
+	endif()
 
 endfunction()
