@@ -6,7 +6,7 @@
 #include <cstddef>
 #include <cstring>
 
-namespace Maia::Renderer
+namespace Maia::Renderer::D3D12
 {
 	class Mapped_memory
 	{
@@ -17,7 +17,8 @@ namespace Maia::Renderer
 
 		void write(void const* data, std::size_t size, SIZE_T begin = 0)
 		{
-			std::memcpy(m_mapped_memory, &data, size);
+			void* mapped_memory = reinterpret_cast<std::byte*>(m_mapped_memory) + begin;
+			std::memcpy(mapped_memory, data, size);
 
 			if (m_written_range.Begin > begin)
 				m_written_range.Begin = begin;

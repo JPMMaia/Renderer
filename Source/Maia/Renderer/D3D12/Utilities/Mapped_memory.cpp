@@ -2,7 +2,7 @@
 
 #include <Maia/Renderer/D3D12/Utilities/Mapped_memory.hpp>
 
-namespace Maia::Renderer
+namespace Maia::Renderer::D3D12
 {
 	namespace
 	{
