@@ -5,7 +5,8 @@ namespace Maia::Renderer::D3D12
 	winrt::com_ptr<IDXGIFactory6> create_factory(UINT flags)
 	{
 		winrt::com_ptr<IDXGIFactory6> factory;
-		CreateDXGIFactory2(flags, __uuidof(factory), factory.put_void());
+		winrt::check_hresult(
+			CreateDXGIFactory2(flags, __uuidof(factory), factory.put_void()));
 		return factory;
 	}
 	winrt::com_ptr<IDXGIAdapter4> select_adapter(IDXGIFactory6& factory, bool const select_WARP_adapter)
