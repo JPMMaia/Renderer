@@ -42,6 +42,9 @@ target_link_libraries (MaiaRenderer
 find_package (Eigen3 REQUIRED)
 target_link_libraries (MaiaRenderer PUBLIC Eigen3::Eigen)
 
+find_package (D3DX12 REQUIRED)
+target_link_libraries (MaiaRenderer PUBLIC D3D12::D3DX12)
+
 target_sources (MaiaRenderer 
 	PRIVATE
 		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.hpp"
