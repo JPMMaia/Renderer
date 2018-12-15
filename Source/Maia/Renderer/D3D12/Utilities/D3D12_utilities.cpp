@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "D3D12_utilities.hpp"
 
 namespace Maia::Renderer::D3D12
@@ -28,26 +30,6 @@ namespace Maia::Renderer::D3D12
 
 			return hardware_adapter;
 		}
-	}
-	winrt::com_ptr<IDXGISwapChain4> create_swap_chain(IDXGIFactory6& factory, IUnknown& device, IUnknown& window, DXGI_FORMAT format, UINT buffer_count)
-	{
-		DXGI_SWAP_CHAIN_DESC1 description{};
-		description.Stereo = true;
-		description.Format = format;
-		description.SampleDesc.Count = 1;
-		description.SampleDesc.Quality = 0;
-		description.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		description.BufferCount = buffer_count;
-		description.Scaling = DXGI_SCALING_NONE;
-		description.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-
-		winrt::com_ptr<IDXGISwapChain1> swap_chain;
-		winrt::check_hresult(
-			factory.CreateSwapChainForCoreWindow(&device, &window, &description, nullptr, swap_chain.put()));
-
-		winrt::com_ptr<IDXGISwapChain4> swap_chain_4;
-		swap_chain->QueryInterface(swap_chain_4.put());
-		return swap_chain_4;
 	}
 
 	winrt::com_ptr<ID3D12Device5> create_device(IDXGIAdapter& adapter, D3D_FEATURE_LEVEL const minimum_feature_level)
@@ -90,7 +72,7 @@ namespace Maia::Renderer::D3D12
 		return command_allocators;
 	}
 	winrt::com_ptr<ID3D12GraphicsCommandList> create_opened_graphics_command_list(
-		ID3D12Device& device, UINT const node_mask, D3D12_COMMAND_LIST_TYPE const type, 
+		ID3D12Device& device, UINT const node_mask, D3D12_COMMAND_LIST_TYPE const type,
 		ID3D12CommandAllocator& command_allocator, ID3D12PipelineState* const initial_state
 	)
 	{
@@ -122,7 +104,7 @@ namespace Maia::Renderer::D3D12
 		winrt::com_ptr<ID3D12DescriptorHeap> descriptor_heap;
 		winrt::check_hresult(
 			device.CreateDescriptorHeap(&description, __uuidof(descriptor_heap), descriptor_heap.put_void()));
-		
+
 		return descriptor_heap;
 	}
 	winrt::com_ptr<ID3D12Fence> create_fence(ID3D12Device& device, UINT64 const initial_value, D3D12_FENCE_FLAGS const flags)
@@ -132,5 +114,256 @@ namespace Maia::Renderer::D3D12
 			device.CreateFence(initial_value, flags, __uuidof(fence), fence.put_void()));
 
 		return fence;
+	}
+
+	winrt::com_ptr<IDXGISwapChain4> create_swap_chain(IDXGIFactory6& factory, IUnknown& direct_command_queue, IUnknown& window, DXGI_FORMAT format, UINT buffer_count)
+	{
+		DXGI_SWAP_CHAIN_DESC1 description{};
+		description.Stereo = true;
+		description.Format = format;
+		description.SampleDesc.Count = 1;
+		description.SampleDesc.Quality = 0;
+		description.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		description.BufferCount = buffer_count;
+		description.Scaling = DXGI_SCALING_NONE;
+		description.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+
+		winrt::com_ptr<IDXGISwapChain1> swap_chain;
+		winrt::check_hresult(
+			factory.CreateSwapChainForCoreWindow(&direct_command_queue, &window, &description, nullptr, swap_chain.put()));
+
+		winrt::com_ptr<IDXGISwapChain4> swap_chain_4;
+		swap_chain->QueryInterface(swap_chain_4.put());
+		return swap_chain_4;
+	}
+
+	namespace
+	{
+		void create_swap_chain_rtvs(ID3D12Device& device, IDXGISwapChain& swap_chain, DXGI_FORMAT format, D3D12_CPU_DESCRIPTOR_HANDLE destination_descriptor, UINT buffer_count)
+		{
+			D3D12_RENDER_TARGET_VIEW_DESC description;
+			description.Format = format;
+			description.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+			description.Texture2D.MipSlice = 0;
+			description.Texture2D.PlaneSlice = 0;
+
+			UINT const descriptor_handle_increment_size = device.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+			for (UINT buffer_index = 0; buffer_index < buffer_count; ++buffer_index)
+			{
+				winrt::com_ptr<ID3D12Resource> buffer;
+				winrt::check_hresult(
+					swap_chain.GetBuffer(buffer_index, __uuidof(buffer), buffer.put_void()));
+
+				device.CreateRenderTargetView(buffer.get(), &description, destination_descriptor);
+
+				destination_descriptor.ptr += descriptor_handle_increment_size;
+			}
+		}
+	}
+
+	winrt::com_ptr<IDXGISwapChain4> create_swap_chain_and_rtvs(IDXGIFactory6& factory, IUnknown& direct_command_queue, IUnknown& window, UINT buffer_count, ID3D12Device& device, D3D12_CPU_DESCRIPTOR_HANDLE destination_descriptor)
+	{
+		winrt::com_ptr<IDXGISwapChain4> swap_chain =
+			create_swap_chain(factory, direct_command_queue, window, DXGI_FORMAT_R8G8B8A8_UNORM, buffer_count);
+
+		create_swap_chain_rtvs(device, *swap_chain, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, destination_descriptor, buffer_count);
+
+		return swap_chain;
+	}
+
+	void resize_swap_chain_buffers_and_recreate_rtvs(IDXGISwapChain4& swap_chain, gsl::span<UINT> create_node_masks, gsl::span<IUnknown*> command_queues, Eigen::Vector2i dimensions, ID3D12Device& device, D3D12_CPU_DESCRIPTOR_HANDLE start_destination_descriptor)
+	{
+		winrt::check_hresult(
+			swap_chain.ResizeBuffers1(
+				0,
+				dimensions(0), dimensions(1),
+				DXGI_FORMAT_R8G8B8A8_UNORM,
+				{},
+				create_node_masks.data(),
+				command_queues.data()
+			)
+		);
+
+		UINT const buffer_count = static_cast<UINT>(create_node_masks.size());
+		create_swap_chain_rtvs(
+			device,
+			swap_chain,
+			DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+			start_destination_descriptor,
+			buffer_count
+		);
+	}
+
+	winrt::com_ptr<ID3D12RootSignature> create_root_signature(
+		ID3D12Device5& device,
+		gsl::span<D3D12_ROOT_PARAMETER1 const> root_parameters,
+		gsl::span<D3D12_STATIC_SAMPLER_DESC const> static_samplers,
+		UINT node_mask,
+		D3D12_ROOT_SIGNATURE_FLAGS flags
+	)
+	{
+		D3D12_VERSIONED_ROOT_SIGNATURE_DESC versioned_description;
+		versioned_description.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
+		versioned_description.Desc_1_1 = [&]() -> D3D12_ROOT_SIGNATURE_DESC1
+		{
+			D3D12_ROOT_SIGNATURE_DESC1 description{};
+			description.NumParameters = static_cast<UINT>(root_parameters.size());
+			description.pParameters = root_parameters.data();
+			description.NumStaticSamplers = static_cast<UINT>(static_samplers.size());
+			description.pStaticSamplers = static_samplers.data();
+			description.Flags = flags;
+			return description;
+		}();
+
+		winrt::com_ptr<ID3DBlob> root_signature_blob;
+		winrt::com_ptr<ID3DBlob> error_blob;
+		{
+			HRESULT const result = D3D12SerializeVersionedRootSignature(&versioned_description, root_signature_blob.put(), error_blob.put());
+
+			if (FAILED(result))
+			{
+				if (error_blob)
+				{
+					std::wstring_view error_messages
+					{
+						reinterpret_cast<wchar_t*>(error_blob->GetBufferPointer()),
+						static_cast<std::size_t>(error_blob->GetBufferSize())
+					};
+
+					std::cerr << error_messages.data();
+				}
+
+				winrt::check_hresult(result);
+			}
+		}
+
+		winrt::com_ptr<ID3D12RootSignature> root_signature;
+		winrt::check_hresult(
+			device.CreateRootSignature(
+				node_mask,
+				root_signature_blob->GetBufferPointer(), root_signature_blob->GetBufferSize(),
+				__uuidof(root_signature), root_signature.put_void()
+			)
+		);
+
+		return root_signature;
+	}
+
+	winrt::com_ptr<ID3D12Heap> create_upload_heap(ID3D12Device& device, UINT64 size_in_bytes)
+	{
+		assert(size_in_bytes % D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT == 0);
+
+		D3D12_HEAP_DESC description;
+		description.SizeInBytes = size_in_bytes;
+		description.Properties = []() -> D3D12_HEAP_PROPERTIES
+		{
+			D3D12_HEAP_PROPERTIES properties;
+			properties.Type = D3D12_HEAP_TYPE_UPLOAD;
+			properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+			properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+			properties.CreationNodeMask = 1;
+			properties.VisibleNodeMask = 1;
+			return properties;
+		}();
+		description.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+		description.Flags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+
+		winrt::com_ptr<ID3D12Heap> upload_heap;
+		winrt::check_hresult(
+			device.CreateHeap(&description, __uuidof(upload_heap), upload_heap.put_void()));
+		return upload_heap;
+	}
+	winrt::com_ptr<ID3D12Heap> create_buffer_heap(ID3D12Device& device, UINT64 size_in_bytes)
+	{
+		assert(size_in_bytes % D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT == 0);
+
+		D3D12_HEAP_DESC description;
+		description.SizeInBytes = size_in_bytes;
+		description.Properties = []() -> D3D12_HEAP_PROPERTIES
+		{
+			D3D12_HEAP_PROPERTIES properties;
+			properties.Type = D3D12_HEAP_TYPE_DEFAULT;
+			properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+			properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+			properties.CreationNodeMask = 1;
+			properties.VisibleNodeMask = 1;
+			return properties;
+		}();
+		description.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+		description.Flags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+
+		winrt::com_ptr<ID3D12Heap> upload_heap;
+		winrt::check_hresult(
+			device.CreateHeap(&description, __uuidof(upload_heap), upload_heap.put_void()));
+		return upload_heap;
+	}
+	winrt::com_ptr<ID3D12Resource> create_buffer(ID3D12Device& device, ID3D12Heap& heap, UINT64 heap_offset, UINT64 width, D3D12_RESOURCE_STATES initial_state)
+	{
+		D3D12_RESOURCE_DESC description;
+		description.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		description.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+		description.Width = width;
+		description.Height = 1;
+		description.DepthOrArraySize = 1;
+		description.MipLevels = 1;
+		description.Format = DXGI_FORMAT_UNKNOWN;
+		description.SampleDesc.Count = 1;
+		description.SampleDesc.Quality = 0;
+		description.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		description.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+		winrt::com_ptr<ID3D12Resource> buffer;
+		winrt::check_hresult(
+			device.CreatePlacedResource(
+				&heap,
+				heap_offset,
+				&description,
+				initial_state,
+				nullptr,
+				__uuidof(buffer),
+				buffer.put_void()
+			)
+		);
+
+		return buffer;
+	}
+
+	void wait(
+		ID3D12CommandQueue& command_queue,
+		ID3D12Fence& fence,
+		HANDLE fence_event,
+		UINT64 event_value_to_wait,
+		DWORD maximum_time_to_wait
+	)
+	{
+		if (fence.GetCompletedValue() < event_value_to_wait)
+		{
+			winrt::check_hresult(
+				fence.SetEventOnCompletion(event_value_to_wait, fence_event));
+
+			winrt::check_win32(
+				WaitForSingleObject(fence_event, maximum_time_to_wait));
+		}
+	}
+
+	void signal_and_wait(
+		ID3D12CommandQueue& command_queue,
+		ID3D12Fence& fence,
+		HANDLE fence_event,
+		UINT64 event_value_to_signal_and_wait,
+		DWORD maximum_time_to_wait
+	)
+	{
+		UINT64 const event_value_to_wait_for = 1;
+
+		winrt::check_hresult(
+			command_queue.Signal(&fence, event_value_to_signal_and_wait));
+
+		winrt::check_hresult(
+			fence.SetEventOnCompletion(event_value_to_signal_and_wait, fence_event));
+
+		winrt::check_win32(
+			WaitForSingleObject(fence_event, maximum_time_to_wait));
 	}
 }
