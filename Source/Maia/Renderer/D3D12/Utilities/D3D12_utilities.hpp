@@ -64,6 +64,25 @@ namespace Maia::Renderer::D3D12
 		);
 	}
 
+	template <class T>
+	void upload_buffer_data(
+		Maia::Renderer::D3D12::Mapped_memory& mapped_memory,
+		ID3D12GraphicsCommandList& command_list,
+		ID3D12Resource& destination_buffer, UINT64 destination_buffer_offset,
+		ID3D12Resource& upload_buffer, UINT64 upload_buffer_offset,
+		gsl::span<T> data
+	)
+	{
+		mapped_memory.write(data.data(), data.size_bytes(), upload_buffer_offset);
+
+		command_list.CopyBufferRegion(
+			&destination_buffer,
+			destination_buffer_offset,
+			&upload_buffer,
+			upload_buffer_offset,
+			data.size_bytes()
+		);
+	}
 
 	void wait(
 		ID3D12CommandQueue& command_queue,
