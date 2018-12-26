@@ -39,7 +39,7 @@ target_link_libraries (MaiaRenderer
         "$<TARGET_PROPERTY:D3D12::RaytracingFallback,RUNTIME_DIRECTORY>" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )]]#
 
-find_package (Eigen3 REQUIRED)
+find_package (Eigen3 3.3 NO_MODULE REQUIRED)
 target_link_libraries (MaiaRenderer PUBLIC Eigen3::Eigen)
 
 find_package (D3DX12 REQUIRED)
