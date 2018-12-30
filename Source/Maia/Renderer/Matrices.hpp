@@ -1,11 +1,11 @@
 #ifndef MAIA_RENDERER_MATRICES_H_INCLUDED
 #define MAIA_RENDERER_MATRICES_H_INCLUDED
 
-#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 namespace Maia::Renderer
 {
-	Eigen::Matrix4f create_view_matrix(Eigen::Vector3f const& position, Eigen::Vector3f const& rotation);
+	Eigen::Matrix4f create_view_matrix(Eigen::Vector3f const& position, Eigen::Quaternionf const& rotation);
 	
 	Eigen::Matrix4f create_orthographic_projection_matrix(Eigen::Vector3f const& dimensions);
 	

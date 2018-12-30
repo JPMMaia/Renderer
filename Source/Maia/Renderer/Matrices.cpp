@@ -1,7 +1,20 @@
+#include <cassert>
+
 #include "Matrices.hpp"
 
 namespace Maia::Renderer
 {
+	Eigen::Matrix4f create_view_matrix(Eigen::Vector3f const& position, Eigen::Quaternionf const& rotation)
+	{
+		assert(rotation.isApprox(rotation.normalized()));
+
+		Eigen::Matrix4f value;
+		value.topLeftCorner<3, 3>() = rotation.conjugate().toRotationMatrix();
+		value.topRightCorner<3, 1>() = value.topLeftCorner<3, 3>() * (-position);
+		value.bottomLeftCorner<1, 4>() = Eigen::Vector4f{ 0.0f, 0.0f, 0.0f, 1.0f };
+		return value;
+	}
+
 	Eigen::Matrix4f create_orthographic_projection_matrix(Eigen::Vector3f const& dimensions)
 	{
 		Eigen::Matrix4f value;

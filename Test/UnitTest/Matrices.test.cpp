@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include <catch2/catch.hpp>
 
 #include <Maia/Renderer/Matrices.hpp>
@@ -6,6 +8,26 @@ namespace Maia::Renderer::Test
 {
 	SCENARIO("Create a view matrix")
 	{
+		GIVEN("Position = { 1.0f, 0.0f, 0.0f } and a rotation of 90 degrees around the Y axis")
+		{
+			Eigen::Vector3f const position{ 1.0f, 0.0f, 0.0f };
+
+			float const half_angle = EIGEN_PI / 4.0f;
+			Eigen::Quaternionf const rotation{ std::cos(half_angle), 0.0f, std::sin(half_angle), 0.0f };
+
+			WHEN("The view matrix is calculated")
+			{
+				Eigen::Matrix4f const view_matrix = create_view_matrix(position, rotation);
+
+				THEN("A Point { 2.0f, 0.0f, 0.0f, 1.0f } should be transformed to { 0.0f, 0.0f, 1.0f, 1.0f }")
+				{
+					Eigen::Vector4f const point{ 2.0f, 0.0f, 0.0f, 1.0f };
+
+					Eigen::Vector4f const transformed_point = view_matrix * point;
+					CHECK(Eigen::Vector4f{ 0.0f, 0.0f, 1.0f, 1.0f }.isApprox(transformed_point));
+				}
+			}
+		}
 	}
 
 	SCENARIO("Create an orthographic projection matrix, assuming a right-handed coordinate system in which X goes right and Y goes down and the camera is looking at +Z")
