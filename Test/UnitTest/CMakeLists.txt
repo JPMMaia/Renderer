@@ -13,7 +13,8 @@ target_link_libraries (MaiaRendererUnitTest PRIVATE Catch2::Catch2)
 target_sources (MaiaRendererUnitTest 
 	PRIVATE
 		"main.cpp"
-		"D3D12/Utilities/D3D12_utilities_test.cpp"
+		"Matrices.test.cpp"
+		#"D3D12/Utilities/D3D12_utilities_test.cpp"
 )
 
 include (Catch)
