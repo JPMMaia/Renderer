@@ -47,6 +47,9 @@ target_link_libraries (MaiaRenderer PUBLIC D3D12::D3DX12)
 
 target_sources (MaiaRenderer 
 	PRIVATE
+		"Maia/Renderer/Matrices.hpp"
+		"Maia/Renderer/Matrices.cpp"
+
 		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.hpp"
 		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.cpp"
 		"Maia/Renderer/D3D12/Utilities/Mapped_memory.hpp"
