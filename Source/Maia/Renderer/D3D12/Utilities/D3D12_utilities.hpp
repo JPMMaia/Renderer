@@ -40,8 +40,8 @@ namespace Maia::Renderer::D3D12
 		D3D12_ROOT_SIGNATURE_FLAGS flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
 	);
 
-	[[nodiscard]] winrt::com_ptr<ID3D12Heap> create_upload_heap(ID3D12Device& device, UINT64 size_in_bytes);
-	[[nodiscard]] winrt::com_ptr<ID3D12Heap> create_buffer_heap(ID3D12Device& device, UINT64 size_in_bytes);
+	[[nodiscard]] winrt::com_ptr<ID3D12Heap> create_upload_heap(ID3D12Device& device, UINT64 size_in_bytes = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
+	[[nodiscard]] winrt::com_ptr<ID3D12Heap> create_buffer_heap(ID3D12Device& device, UINT64 size_in_bytes = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
 	[[nodiscard]] winrt::com_ptr<ID3D12Resource> create_buffer(ID3D12Device& device, ID3D12Heap& heap, UINT64 heap_offset, UINT64 width, D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_COPY_DEST);
 
 	template <class T>
@@ -49,7 +49,7 @@ namespace Maia::Renderer::D3D12
 		ID3D12GraphicsCommandList& command_list,
 		ID3D12Resource& destination_buffer, UINT64 destination_buffer_offset,
 		ID3D12Resource& upload_buffer, UINT64 upload_buffer_offset,
-		gsl::span<T> data
+		gsl::span<T const> data
 	)
 	{
 		Maia::Renderer::D3D12::Mapped_memory mapped_memory{ upload_buffer, 0, {} };
