@@ -1,4 +1,4 @@
-function(target_add_hlsl_shader target_name group input_filename output_filename entry_point_name target_profile deploy additional_options)
+function(target_add_hlsl_shader target_name group input_filename output_filename entry_point_name target_profile additional_options)
 
 	find_program(FXC "fxc.exe")
 
@@ -17,14 +17,12 @@ function(target_add_hlsl_shader target_name group input_filename output_filename
 	source_group("Resource Files\\${group}" FILES "${input_filename}")
 	source_group("Generated Files\\${group}" FILES "${output_filename}")
 
-	if(${deploy})
-		set_source_files_properties(
-			"${input_filename}"
-				PROPERTIES 
-					VS_DEPLOYMENT_CONTENT 1
-					VS_DEPLOYMENT_LOCATION "${group}"
-		)
-
-	endif()
+	set_source_files_properties(
+		"${output_filename}"
+			PROPERTIES 
+				VS_COPY_TO_OUT_DIR PreserveNewest
+				VS_DEPLOYMENT_CONTENT 1
+				VS_DEPLOYMENT_LOCATION "${group}"
+	)
 
 endfunction()

@@ -4,14 +4,14 @@
 
 namespace Maia::Renderer::D3D12
 {
-	winrt::com_ptr<IDXGIFactory6> create_factory(UINT flags)
+	winrt::com_ptr<IDXGIFactory5> create_factory(UINT flags)
 	{
-		winrt::com_ptr<IDXGIFactory6> factory;
+		winrt::com_ptr<IDXGIFactory5> factory;
 		winrt::check_hresult(
 			CreateDXGIFactory2(flags, __uuidof(factory), factory.put_void()));
 		return factory;
 	}
-	winrt::com_ptr<IDXGIAdapter4> select_adapter(IDXGIFactory6& factory, bool const select_WARP_adapter)
+	winrt::com_ptr<IDXGIAdapter4> select_adapter(IDXGIFactory4& factory, bool const select_WARP_adapter)
 	{
 		if (select_WARP_adapter)
 		{
@@ -24,17 +24,34 @@ namespace Maia::Renderer::D3D12
 
 		else
 		{
-			winrt::com_ptr<IDXGIAdapter4> hardware_adapter;
-			winrt::check_hresult(
-				factory.EnumAdapterByGpuPreference(0, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(hardware_adapter), hardware_adapter.put_void()));
+			winrt::com_ptr<IDXGIFactory6> factory_6;
 
-			return hardware_adapter;
+			if (SUCCEEDED(factory.QueryInterface(__uuidof(IDXGIFactory6), factory_6.put_void())))
+			{
+				winrt::com_ptr<IDXGIAdapter4> hardware_adapter;
+				winrt::check_hresult(
+					factory_6->EnumAdapterByGpuPreference(0, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, __uuidof(hardware_adapter), hardware_adapter.put_void()));
+
+				return hardware_adapter;
+			}
+			else
+			{
+				winrt::com_ptr<IDXGIAdapter1> hardware_adapter;
+				winrt::check_hresult(
+					factory.EnumAdapters1(0, hardware_adapter.put()));
+
+				winrt::com_ptr<IDXGIAdapter4> hardware_adapter_4;
+				winrt::check_hresult(
+					hardware_adapter->QueryInterface(__uuidof(IDXGIAdapter4), hardware_adapter_4.put_void()));
+
+				return hardware_adapter_4;
+			}
 		}
 	}
 
-	winrt::com_ptr<ID3D12Device5> create_device(IDXGIAdapter& adapter, D3D_FEATURE_LEVEL const minimum_feature_level)
+	winrt::com_ptr<ID3D12Device> create_device(IDXGIAdapter& adapter, D3D_FEATURE_LEVEL const minimum_feature_level)
 	{
-		winrt::com_ptr<ID3D12Device5> device;
+		winrt::com_ptr<ID3D12Device> device;
 		winrt::check_hresult(
 			D3D12CreateDevice(&adapter, minimum_feature_level, __uuidof(device), device.put_void()));
 
@@ -116,7 +133,7 @@ namespace Maia::Renderer::D3D12
 		return fence;
 	}
 
-	winrt::com_ptr<IDXGISwapChain4> create_swap_chain(IDXGIFactory6& factory, IUnknown& direct_command_queue, IUnknown& window, DXGI_FORMAT format, UINT buffer_count)
+	winrt::com_ptr<IDXGISwapChain4> create_swap_chain(IDXGIFactory2& factory, IUnknown& direct_command_queue, IUnknown& window, DXGI_FORMAT format, UINT buffer_count)
 	{
 		DXGI_SWAP_CHAIN_DESC1 description{};
 		description.Stereo = true;
@@ -131,6 +148,32 @@ namespace Maia::Renderer::D3D12
 		winrt::com_ptr<IDXGISwapChain1> swap_chain;
 		winrt::check_hresult(
 			factory.CreateSwapChainForCoreWindow(&direct_command_queue, &window, &description, nullptr, swap_chain.put()));
+
+		winrt::com_ptr<IDXGISwapChain4> swap_chain_4;
+		swap_chain->QueryInterface(swap_chain_4.put());
+		return swap_chain_4;
+	}
+	winrt::com_ptr<IDXGISwapChain4> create_swap_chain(IDXGIFactory2& factory, IUnknown& direct_command_queue, HWND window_handle, DXGI_FORMAT format, UINT buffer_count, DXGI_RATIONAL refresh_rate, BOOL windowed)
+	{
+		DXGI_SWAP_CHAIN_DESC1 description{};
+		description.Stereo = true;
+		description.Format = format;
+		description.SampleDesc.Count = 1;
+		description.SampleDesc.Quality = 0;
+		description.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		description.BufferCount = buffer_count;
+		description.Scaling = DXGI_SCALING_NONE;
+		description.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+
+		DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscreen_description{};
+		fullscreen_description.RefreshRate = refresh_rate;
+		fullscreen_description.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+		fullscreen_description.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+		fullscreen_description.Windowed = windowed;
+
+		winrt::com_ptr<IDXGISwapChain1> swap_chain;
+		winrt::check_hresult(
+			factory.CreateSwapChainForHwnd(&direct_command_queue, window_handle, &description, &fullscreen_description, nullptr, swap_chain.put()));
 
 		winrt::com_ptr<IDXGISwapChain4> swap_chain_4;
 		swap_chain->QueryInterface(swap_chain_4.put());
@@ -157,10 +200,19 @@ namespace Maia::Renderer::D3D12
 			destination_descriptor.ptr += descriptor_handle_increment_size;
 		}
 	}
-	winrt::com_ptr<IDXGISwapChain4> create_swap_chain_and_rtvs(IDXGIFactory6& factory, IUnknown& direct_command_queue, IUnknown& window, UINT buffer_count, ID3D12Device& device, D3D12_CPU_DESCRIPTOR_HANDLE destination_descriptor)
+	winrt::com_ptr<IDXGISwapChain4> create_swap_chain_and_rtvs(IDXGIFactory2& factory, IUnknown& direct_command_queue, IUnknown& window, UINT buffer_count, ID3D12Device& device, D3D12_CPU_DESCRIPTOR_HANDLE destination_descriptor)
 	{
 		winrt::com_ptr<IDXGISwapChain4> swap_chain =
 			create_swap_chain(factory, direct_command_queue, window, DXGI_FORMAT_R8G8B8A8_UNORM, buffer_count);
+
+		create_swap_chain_rtvs(device, *swap_chain, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, destination_descriptor, buffer_count);
+
+		return swap_chain;
+	}
+	winrt::com_ptr<IDXGISwapChain4> create_swap_chain_and_rtvs(IDXGIFactory2& factory, IUnknown& direct_command_queue, HWND window_handle, UINT buffer_count, DXGI_RATIONAL refresh_rate, BOOL windowed, ID3D12Device& device, D3D12_CPU_DESCRIPTOR_HANDLE destination_descriptor)
+	{
+		winrt::com_ptr<IDXGISwapChain4> swap_chain =
+			create_swap_chain(factory, direct_command_queue, window_handle, DXGI_FORMAT_R8G8B8A8_UNORM, buffer_count, refresh_rate, windowed);
 
 		create_swap_chain_rtvs(device, *swap_chain, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, destination_descriptor, buffer_count);
 
@@ -191,7 +243,7 @@ namespace Maia::Renderer::D3D12
 	}
 
 	winrt::com_ptr<ID3D12RootSignature> create_root_signature(
-		ID3D12Device5& device,
+		ID3D12Device& device,
 		gsl::span<D3D12_ROOT_PARAMETER1 const> root_parameters,
 		gsl::span<D3D12_STATIC_SAMPLER_DESC const> static_samplers,
 		UINT node_mask,
