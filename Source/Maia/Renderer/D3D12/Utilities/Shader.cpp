@@ -5,6 +5,7 @@
 
 #include <d3dcompiler.h>
 
+#include "Check_hresult.hpp"
 #include "Shader.hpp"
 
 namespace Maia::Renderer::D3D12
@@ -42,7 +43,7 @@ namespace Maia::Renderer::D3D12
 					std::cerr << error_messages.data();
 				}
 
-				winrt::check_hresult(result);
+				check_hresult(result);
 			}
 
 			return shader_blob;
@@ -51,7 +52,7 @@ namespace Maia::Renderer::D3D12
 		winrt::com_ptr<ID3DBlob> create_shader_blob(std::filesystem::path const& compiled_shader_path)
 		{
 			winrt::com_ptr<ID3DBlob> shader_blob;
-			winrt::check_hresult(
+			check_hresult(
 				D3DReadFileToBlob(compiled_shader_path.c_str(), shader_blob.put()));
 			return shader_blob;
 		}

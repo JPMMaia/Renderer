@@ -50,6 +50,8 @@ target_sources (MaiaRenderer
 		"Maia/Renderer/Matrices.hpp"
 		"Maia/Renderer/Matrices.cpp"
 
+		"Maia/Renderer/D3D12/Utilities/Check_hresult.hpp"
+		"Maia/Renderer/D3D12/Utilities/Check_hresult.cpp"
 		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.hpp"
 		"Maia/Renderer/D3D12/Utilities/D3D12_utilities.cpp"
 		"Maia/Renderer/D3D12/Utilities/Mapped_memory.hpp"

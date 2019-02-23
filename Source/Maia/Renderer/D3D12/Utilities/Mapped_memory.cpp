@@ -1,5 +1,6 @@
 #include <winrt/base.h>
 
+#include "Check_hresult.hpp"
 #include <Maia/Renderer/D3D12/Utilities/Mapped_memory.hpp>
 
 namespace Maia::Renderer::D3D12
@@ -10,7 +11,7 @@ namespace Maia::Renderer::D3D12
 		{
 			void* mapped_memory;
 			
-			winrt::check_hresult(
+			check_hresult(
 				resource.Map(subresource, &read_range, &mapped_memory));
 			
 			return mapped_memory;
