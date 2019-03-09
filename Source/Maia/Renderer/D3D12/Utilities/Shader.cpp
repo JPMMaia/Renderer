@@ -17,6 +17,17 @@ namespace Maia::Renderer::D3D12
 			winrt::com_ptr<ID3DBlob> shader_blob;
 			winrt::com_ptr<ID3DBlob> error_messages_blob;
 
+			UINT const compile_flags = []() -> UINT
+			{
+				UINT compile_flags = D3DCOMPILE_ALL_RESOURCES_BOUND;
+
+#if defined(_DEBUG)
+				compile_flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+
+				return compile_flags;
+			}();
+
 			HRESULT const result =
 				D3DCompileFromFile(
 					shader_path.c_str(),
@@ -24,7 +35,7 @@ namespace Maia::Renderer::D3D12
 					D3D_COMPILE_STANDARD_FILE_INCLUDE,
 					entry_point.data(),
 					target.data(),
-					D3DCOMPILE_DEBUG,
+					compile_flags,
 					0,
 					shader_blob.put(),
 					error_messages_blob.put()
