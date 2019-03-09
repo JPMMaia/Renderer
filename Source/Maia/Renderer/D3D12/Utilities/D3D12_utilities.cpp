@@ -1,23 +1,25 @@
 #include <iostream>
 #include <memory_resource>
 
+#include <d3dx12.h>
+
 #include "Check_hresult.hpp"
 #include "D3D12_utilities.hpp"
 
 namespace Maia::Renderer::D3D12
 {
-	winrt::com_ptr<IDXGIFactory5> create_factory(UINT flags)
+	winrt::com_ptr<IDXGIFactory4> create_factory(UINT flags)
 	{
-		winrt::com_ptr<IDXGIFactory5> factory;
+		winrt::com_ptr<IDXGIFactory4> factory;
 		check_hresult(
 			CreateDXGIFactory2(flags, __uuidof(factory), factory.put_void()));
 		return factory;
 	}
-	winrt::com_ptr<IDXGIAdapter4> select_adapter(IDXGIFactory4& factory, bool const select_WARP_adapter)
+	winrt::com_ptr<IDXGIAdapter3> select_adapter(IDXGIFactory4& factory, bool const select_WARP_adapter)
 	{
 		if (select_WARP_adapter)
 		{
-			winrt::com_ptr<IDXGIAdapter4> warp_adapter;
+			winrt::com_ptr<IDXGIAdapter3> warp_adapter;
 			check_hresult(
 				factory.EnumWarpAdapter(__uuidof(warp_adapter), warp_adapter.put_void()));
 
@@ -26,7 +28,7 @@ namespace Maia::Renderer::D3D12
 
 		else
 		{
-			winrt::com_ptr<IDXGIFactory6> factory_6;
+			/*winrt::com_ptr<IDXGIFactory6> factory_6;
 
 			if (SUCCEEDED(factory.QueryInterface(__uuidof(IDXGIFactory6), factory_6.put_void())))
 			{
@@ -36,17 +38,17 @@ namespace Maia::Renderer::D3D12
 
 				return hardware_adapter;
 			}
-			else
+			else*/
 			{
 				winrt::com_ptr<IDXGIAdapter1> hardware_adapter;
 				check_hresult(
 					factory.EnumAdapters1(0, hardware_adapter.put()));
 
-				winrt::com_ptr<IDXGIAdapter4> hardware_adapter_4;
+				winrt::com_ptr<IDXGIAdapter3> hardware_adapter_3;
 				check_hresult(
-					hardware_adapter->QueryInterface(__uuidof(IDXGIAdapter4), hardware_adapter_4.put_void()));
+					hardware_adapter->QueryInterface(__uuidof(hardware_adapter_3), hardware_adapter_3.put_void()));
 
-				return hardware_adapter_4;
+				return hardware_adapter_3;
 			}
 		}
 	}
@@ -144,13 +146,15 @@ namespace Maia::Renderer::D3D12
 		if (result == DXGI_ERROR_NOT_FOUND)
 			return {};
 
+		UINT const flags = DXGI_ENUM_MODES_INTERLACED;
+
 		UINT num_modes;
 		check_hresult(
-			output->GetDisplayModeList(format, 0, &num_modes, nullptr));
+			output->GetDisplayModeList(format, flags, &num_modes, nullptr));
 
 		std::vector<DXGI_MODE_DESC> display_modes(num_modes);
 		check_hresult(
-			output->GetDisplayModeList(format, 0, &num_modes, display_modes.data()));
+			output->GetDisplayModeList(format, flags, &num_modes, display_modes.data()));
 
 		for (UINT mode_index = 0; mode_index < num_modes; ++mode_index)
 		{
@@ -164,7 +168,7 @@ namespace Maia::Renderer::D3D12
 
 		throw std::runtime_error("Couldn't find a valid refresh rate");
 	}
-	winrt::com_ptr<IDXGISwapChain4> create_swap_chain(IDXGIFactory2& factory, IUnknown& direct_command_queue, HWND window_handle, DXGI_MODE_DESC1 const& mode, UINT buffer_count, BOOL windowed)
+	winrt::com_ptr<IDXGISwapChain3> create_swap_chain(IDXGIFactory2& factory, IUnknown& direct_command_queue, HWND window_handle, DXGI_MODE_DESC1 const& mode, UINT buffer_count, BOOL windowed)
 	{
 		DXGI_SWAP_CHAIN_DESC1 description{};
 		description.Width = mode.Width;
@@ -186,13 +190,13 @@ namespace Maia::Renderer::D3D12
 
 		winrt::com_ptr<IDXGISwapChain1> swap_chain;
 		check_hresult(
-			factory.CreateSwapChainForHwnd(&direct_command_queue, window_handle, &description, &fullscreen_description, nullptr, swap_chain.put()));
+			factory.CreateSwapChainForHwnd(&direct_command_queue, window_handle, &description, nullptr, nullptr, swap_chain.put()));
 
-		winrt::com_ptr<IDXGISwapChain4> swap_chain_4;
-		swap_chain->QueryInterface(swap_chain_4.put());
-		return swap_chain_4;
+		winrt::com_ptr<IDXGISwapChain3> swap_chain_3;
+		swap_chain->QueryInterface(swap_chain_3.put());
+		return swap_chain_3;
 	}
-	winrt::com_ptr<IDXGISwapChain4> create_swap_chain(IDXGIFactory2& factory, IUnknown& direct_command_queue, IUnknown& window, DXGI_FORMAT format, UINT buffer_count)
+	winrt::com_ptr<IDXGISwapChain3> create_swap_chain(IDXGIFactory2& factory, IUnknown& direct_command_queue, IUnknown& window, DXGI_FORMAT format, UINT buffer_count)
 	{
 		DXGI_SWAP_CHAIN_DESC1 description{};
 		description.Stereo = true;
@@ -208,9 +212,9 @@ namespace Maia::Renderer::D3D12
 		check_hresult(
 			factory.CreateSwapChainForCoreWindow(&direct_command_queue, &window, &description, nullptr, swap_chain.put()));
 
-		winrt::com_ptr<IDXGISwapChain4> swap_chain_4;
-		swap_chain->QueryInterface(swap_chain_4.put());
-		return swap_chain_4;
+		winrt::com_ptr<IDXGISwapChain3> swap_chain_3;
+		swap_chain->QueryInterface(swap_chain_3.put());
+		return swap_chain_3;
 	}
 	void create_swap_chain_rtvs(ID3D12Device& device, IDXGISwapChain& swap_chain, DXGI_FORMAT format, D3D12_CPU_DESCRIPTOR_HANDLE destination_descriptor, UINT buffer_count)
 	{
@@ -234,7 +238,7 @@ namespace Maia::Renderer::D3D12
 		}
 	}
 
-	void resize_swap_chain_buffers_and_recreate_rtvs(IDXGISwapChain4& swap_chain, gsl::span<UINT> create_node_masks, gsl::span<IUnknown*> command_queues, Eigen::Vector2i dimensions, ID3D12Device& device, D3D12_CPU_DESCRIPTOR_HANDLE start_destination_descriptor)
+	void resize_swap_chain_buffers_and_recreate_rtvs(IDXGISwapChain3& swap_chain, gsl::span<UINT> create_node_masks, gsl::span<IUnknown*> command_queues, Eigen::Vector2i dimensions, ID3D12Device& device, D3D12_CPU_DESCRIPTOR_HANDLE start_destination_descriptor)
 	{
 		check_hresult(
 			swap_chain.ResizeBuffers1(
@@ -316,20 +320,7 @@ namespace Maia::Renderer::D3D12
 	{
 		assert(size_in_bytes % D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT == 0);
 
-		D3D12_HEAP_DESC description;
-		description.SizeInBytes = size_in_bytes;
-		description.Properties = []() -> D3D12_HEAP_PROPERTIES
-		{
-			D3D12_HEAP_PROPERTIES properties;
-			properties.Type = D3D12_HEAP_TYPE_UPLOAD;
-			properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-			properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-			properties.CreationNodeMask = 1;
-			properties.VisibleNodeMask = 1;
-			return properties;
-		}();
-		description.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		description.Flags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+		CD3DX12_HEAP_DESC const description{ size_in_bytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS };
 
 		winrt::com_ptr<ID3D12Heap> upload_heap;
 		check_hresult(
@@ -340,20 +331,8 @@ namespace Maia::Renderer::D3D12
 	{
 		assert(size_in_bytes % D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT == 0);
 
-		D3D12_HEAP_DESC description;
-		description.SizeInBytes = size_in_bytes;
-		description.Properties = []() -> D3D12_HEAP_PROPERTIES
-		{
-			D3D12_HEAP_PROPERTIES properties;
-			properties.Type = D3D12_HEAP_TYPE_DEFAULT;
-			properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-			properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-			properties.CreationNodeMask = 1;
-			properties.VisibleNodeMask = 1;
-			return properties;
-		}();
-		description.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		description.Flags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+		CD3DX12_HEAP_PROPERTIES const properties{ D3D12_HEAP_TYPE_DEFAULT };
+		CD3DX12_HEAP_DESC const description{ size_in_bytes, properties, D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT, D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS };
 
 		winrt::com_ptr<ID3D12Heap> upload_heap;
 		check_hresult(
@@ -362,18 +341,7 @@ namespace Maia::Renderer::D3D12
 	}
 	winrt::com_ptr<ID3D12Resource> create_buffer(ID3D12Device& device, ID3D12Heap& heap, UINT64 heap_offset, UINT64 width, D3D12_RESOURCE_STATES initial_state)
 	{
-		D3D12_RESOURCE_DESC description;
-		description.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		description.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		description.Width = width;
-		description.Height = 1;
-		description.DepthOrArraySize = 1;
-		description.MipLevels = 1;
-		description.Format = DXGI_FORMAT_UNKNOWN;
-		description.SampleDesc.Count = 1;
-		description.SampleDesc.Quality = 0;
-		description.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		description.Flags = D3D12_RESOURCE_FLAG_NONE;
+		CD3DX12_RESOURCE_DESC const description = CD3DX12_RESOURCE_DESC::Buffer(width);
 
 		winrt::com_ptr<ID3D12Resource> buffer;
 		check_hresult(

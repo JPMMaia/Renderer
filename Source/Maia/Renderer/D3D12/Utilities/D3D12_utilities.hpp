@@ -16,8 +16,8 @@
 
 namespace Maia::Renderer::D3D12
 {
-	[[nodiscard]] winrt::com_ptr<IDXGIFactory5> create_factory(UINT flags);
-	[[nodiscard]] winrt::com_ptr<IDXGIAdapter4> select_adapter(IDXGIFactory4& factory, bool select_WARP_adapter);
+	[[nodiscard]] winrt::com_ptr<IDXGIFactory4> create_factory(UINT flags);
+	[[nodiscard]] winrt::com_ptr<IDXGIAdapter3> select_adapter(IDXGIFactory4& factory, bool select_WARP_adapter);
 	[[nodiscard]] winrt::com_ptr<ID3D12Device> create_device(IDXGIAdapter& adapter, D3D_FEATURE_LEVEL minimum_feature_level);
 	[[nodiscard]] winrt::com_ptr<ID3D12CommandQueue> create_command_queue(ID3D12Device& device, D3D12_COMMAND_LIST_TYPE type, INT priority, D3D12_COMMAND_QUEUE_FLAGS flags, UINT node_mask);
 	[[nodiscard]] winrt::com_ptr<ID3D12CommandAllocator> create_command_allocator(ID3D12Device& device, D3D12_COMMAND_LIST_TYPE type);
@@ -28,11 +28,11 @@ namespace Maia::Renderer::D3D12
 	[[nodiscard]] winrt::com_ptr<ID3D12Fence> create_fence(ID3D12Device& device, UINT64 initial_value, D3D12_FENCE_FLAGS flags);
 
 	[[nodiscard]] DXGI_RATIONAL find_refresh_rate(IDXGIAdapter& adapter, UINT output_index, DXGI_FORMAT format, std::pair<UINT, UINT> window_size);
-	[[nodiscard]] winrt::com_ptr<IDXGISwapChain4> create_swap_chain(IDXGIFactory2& factory, IUnknown& direct_command_queue, HWND window_handle, DXGI_MODE_DESC1 const& mode, UINT buffer_count, BOOL windowed);
-	[[nodiscard]] winrt::com_ptr<IDXGISwapChain4> create_swap_chain(IDXGIFactory2& factory, IUnknown& direct_command_queue, IUnknown& window, DXGI_FORMAT format, UINT buffer_count);
+	[[nodiscard]] winrt::com_ptr<IDXGISwapChain3> create_swap_chain(IDXGIFactory2& factory, IUnknown& direct_command_queue, HWND window_handle, DXGI_MODE_DESC1 const& mode, UINT buffer_count, BOOL windowed);
+	[[nodiscard]] winrt::com_ptr<IDXGISwapChain3> create_swap_chain(IDXGIFactory2& factory, IUnknown& direct_command_queue, IUnknown& window, DXGI_FORMAT format, UINT buffer_count);
 	void create_swap_chain_rtvs(ID3D12Device& device, IDXGISwapChain& swap_chain, DXGI_FORMAT format, D3D12_CPU_DESCRIPTOR_HANDLE destination_descriptor, UINT buffer_count);
 
-	void resize_swap_chain_buffers_and_recreate_rtvs(IDXGISwapChain4& swap_chain, gsl::span<UINT> create_node_masks, gsl::span<IUnknown*> command_queues, Eigen::Vector2i dimensions, ID3D12Device& device, D3D12_CPU_DESCRIPTOR_HANDLE start_destination_descriptor);
+	void resize_swap_chain_buffers_and_recreate_rtvs(IDXGISwapChain3& swap_chain, gsl::span<UINT> create_node_masks, gsl::span<IUnknown*> command_queues, Eigen::Vector2i dimensions, ID3D12Device& device, D3D12_CPU_DESCRIPTOR_HANDLE start_destination_descriptor);
 
 	[[nodiscard]] winrt::com_ptr<ID3D12RootSignature> create_root_signature(
 		ID3D12Device& device,
