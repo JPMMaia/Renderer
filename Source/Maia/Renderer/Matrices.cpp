@@ -15,13 +15,13 @@ namespace Maia::Renderer
 		return value;
 	}
 
-	Eigen::Matrix4f create_orthographic_projection_matrix(Eigen::Vector3f const& dimensions)
+	Eigen::Matrix4f create_orthographic_projection_matrix(float const horizontal_magnification, float const vertical_magnification, float const near_z, float const far_z)
 	{
 		Eigen::Matrix4f value;
 		value << 
-			2.0f / dimensions(0), 0.0f, 0.0f, 0.0f,
-			0.0f, 2.0f / dimensions(1), 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f / dimensions(2), 0.0f,
+			1.0f / horizontal_magnification, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f / vertical_magnification, 0.0f, 0.0f,
+			0.0f, 0.0f, 2.0f / (far_z - near_z), (far_z + near_z) / (far_z - near_z),
 			0.0f, 0.0f, 0.0f, 1.0f;
 		return value;
 	}
