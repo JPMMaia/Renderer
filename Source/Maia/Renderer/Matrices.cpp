@@ -17,36 +17,44 @@ namespace Maia::Renderer
 
 	Eigen::Matrix4f create_orthographic_projection_matrix(float const horizontal_magnification, float const vertical_magnification, float const near_z, float const far_z)
 	{
+		float const range_z = far_z - near_z;
+
 		Eigen::Matrix4f value;
 		value << 
 			1.0f / horizontal_magnification, 0.0f, 0.0f, 0.0f,
 			0.0f, 1.0f / vertical_magnification, 0.0f, 0.0f,
-			0.0f, 0.0f, 2.0f / (far_z - near_z), (far_z + near_z) / (far_z - near_z),
+			0.0f, 0.0f, 1.0f / range_z, -near_z / range_z,
 			0.0f, 0.0f, 0.0f, 1.0f;
+
 		return value;
 	}
 
-	Eigen::Matrix4f create_perspective_projection_matrix(Eigen::Vector2f const& half_dimensions, Eigen::Vector2f const& zRange)
+	Eigen::Matrix4f create_infinite_perspective_projection_matrix(float const aspect_ratio, float const vertical_field_of_view, float const near_z)
 	{
-		float const right = half_dimensions(0);
-		float const bottom = half_dimensions(1);
-		float const near = zRange(0);
-		float const far = zRange(1);
+		float const half_height = std::tan(0.5f * vertical_field_of_view);
+		
+		// TODO check
+		Eigen::Matrix4f value;
+		value <<
+			1.0f / (aspect_ratio * half_height), 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f / half_height, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, -near_z,
+			0.0f, 0.0f, 1.0f, 0.0f;
+
+		return value;
+	}
+
+	Eigen::Matrix4f create_finite_perspective_projection_matrix(float const aspect_ratio, float const vertical_field_of_view, float const near_z, float const far_z)
+	{
+		float const half_height = std::tan(0.5f * vertical_field_of_view);
 
 		Eigen::Matrix4f value;
 		value <<
-			near / right, 0.0f, 0.0f, 0.0f,
-			0.0f, near / bottom, 0.0f, 0.0f,
-			0.0f, 0.0f, far / (far - near), - far * near / (far - near),
+			1.0f / (aspect_ratio * half_height), 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f / half_height, 0.0f, 0.0f,
+			0.0f, 0.0f, far_z / (far_z - near_z), - far_z * near_z / (far_z - near_z),
 			0.0f, 0.0f, 1.0f, 0.0f;
+
 		return value;
-	}
-
-	Eigen::Matrix4f create_perspective_projection_matrix(float const vertical_half_angle_of_view, float const width_by_height_ratio, Eigen::Vector2f const& zRange)
-	{
-		float const bottom = std::tan(vertical_half_angle_of_view) * zRange(0);
-		float const right = width_by_height_ratio * bottom;
-
-		return create_perspective_projection_matrix({ right, bottom }, zRange);
 	}
 }
